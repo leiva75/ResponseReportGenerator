@@ -1,0 +1,33 @@
+# Response Report Generator - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Web Framework
+Flask>=2.3.0
+Werkzeug>=2.3.0
+
+# Document Generation
+python-docx>=0.8.11
+reportlab>=4.0.0
+
+# PDF Generation
+# Note: WeasyPrint removed - requires GTK libraries on Windows
+# PDF generation uses reportlab instead
+
+# HTTP Requests
+requests>=2.31.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# OpenAI API (for AI Assistant features)
+openai>=1.0.0
+
+# Production WSGI Server
+waitress>=3.0.0
+
+# For Windows executable (optional, development only)
+# pip install pyinstaller
+beautifulsoup4
+feedparser
+python-dateutil
+platformdirs>=4.0.0
