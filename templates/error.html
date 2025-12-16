@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a365d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Error {{ error_code }} - Report Listing Response</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/response_logo.png') }}">
+    <style>
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .error-code {
+            font-size: 120px;
+            font-weight: 700;
+            color: #1a365d;
+            line-height: 1;
+            margin-bottom: 20px;
+        }
+        .error-message {
+            font-size: 24px;
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+        .error-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        @media (max-width: 480px) {
+            .error-code { font-size: 80px; }
+            .error-message { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <img src="{{ url_for('static', filename='img/response_logo.png') }}" alt="Response Global Event Security" class="logo">
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="error-container">
+            <div class="error-code">{{ error_code }}</div>
+            <div class="error-message">{{ error_message }}</div>
+            <div class="error-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Go to Home</a>
+                <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

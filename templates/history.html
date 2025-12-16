@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a365d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Report History - Response Global Event Security</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/response_logo.png') }}">
+    <script src="{{ url_for('static', filename='js/watchdog-client.js') }}" defer></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/js/sw.js').catch(function(e) {
+                console.log('SW registration failed:', e);
+            });
+        }
+    </script>
+    <style>
+        .history-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .history-header h1 {
+            text-align: left;
+            margin-bottom: 0;
+        }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .back-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #b91c1c;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .history-empty {
+            text-align: center;
+            padding: 60px 20px;
+            background: #f9fafb;
+            border-radius: 12px;
+            color: #6b7280;
+        }
+        
+        .history-empty h2 {
+            color: #374151;
+            margin-bottom: 10px;
+        }
+        
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .history-item {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            transition: box-shadow 0.2s;
+        }
+        
+        .history-item:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+        
+        .history-info {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .history-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a365d;
+            margin-bottom: 8px;
+        }
+        
+        .history-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .history-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .history-meta-label {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .history-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-load {
+            background: #059669;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .btn-load:hover {
+            background: #047857;
+        }
+        
+        .btn-delete {
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .btn-delete:hover {
+            background: #b91c1c;
+        }
+        
+        .history-date {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-top: 8px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-venue {
+            background: #d1fae5;
+            color: #047857;
+        }
+        
+        .badge-hotel {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .badge-draft {
+            background: #fef3c7;
+            color: #d97706;
+            font-weight: 600;
+        }
+        
+        .badge-completed {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .history-item.is-draft {
+            border-left: 4px solid #f59e0b;
+        }
+        
+        @media (max-width: 768px) {
+            .history-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .history-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .history-actions {
+                width: 100%;
+            }
+            
+            .history-actions a,
+            .history-actions button {
+                flex: 1;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <img src="{{ url_for('static', filename='img/response_logo.png') }}" alt="Response Global Event Security" class="logo">
+        </div>
+    </header>
+
+    <div class="history-container">
+        <div class="history-header">
+            <div>
+                <h1>Report History</h1>
+                <p class="subtitle" style="text-align: left; margin-bottom: 0;">View and reload your previously generated reports</p>
+            </div>
+            <a href="{{ url_for('index') }}" class="back-btn">
+                Back to Form
+            </a>
+        </div>
+
+        {% if error_message %}
+        <div class="alert-error">
+            <strong>Error:</strong> {{ error_message }}
+        </div>
+        {% endif %}
+
+        {% if reports and reports|length > 0 %}
+        <div class="history-list">
+            {% for report in reports %}
+            <div class="history-item{% if report.is_draft %} is-draft{% endif %}">
+                <div class="history-info">
+                    <div class="history-title">
+                        {% if report.is_draft %}
+                        <span class="badge badge-draft">BROUILLON</span>
+                        {% endif %}
+                        {{ report.venue_name or 'Unnamed Venue' }}
+                        {% if report.city %}
+                        <span class="badge">{{ report.city }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="history-meta">
+                        <div class="history-meta-item">
+                            <span class="history-meta-label">Event:</span>
+                            <span>{{ report.event_type or 'Not specified' }}</span>
+                        </div>
+                        <div class="history-meta-item">
+                            <span class="history-meta-label">Hotel:</span>
+                            <span>{{ report.hotel_name or 'Not specified' }}</span>
+                            {% if report.hotel2_name %}
+                            <span>, {{ report.hotel2_name }}</span>
+                            {% endif %}
+                        </div>
+                        {% if report.event_start_date %}
+                        <div class="history-meta-item">
+                            <span class="history-meta-label">Date:</span>
+                            <span>{{ report.event_start_date }}{% if report.event_end_date %} to {{ report.event_end_date }}{% endif %}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="history-date">
+                        {% if report.is_draft %}
+                        Sauvegardé: {{ report.updated_at_formatted or report.created_at_formatted }}
+                        {% else %}
+                        Généré: {{ report.created_at_formatted }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="history-actions">
+                    <a href="{{ url_for('load_from_history', report_id=report.id) }}" class="btn-load">
+                        {% if report.is_draft %}Reprendre{% else %}Charger{% endif %}
+                    </a>
+                    <form action="{{ url_for('delete_from_history', report_id=report.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Are you sure you want to delete this report from history?');">
+                        <button type="submit" class="btn-delete">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="history-empty">
+            <h2>No Reports Yet</h2>
+            <p>Generated PDF reports will appear here. You can reload them to review or regenerate.</p>
+            <a href="{{ url_for('index') }}" class="back-btn" style="margin-top: 20px;">
+                Create Your First Report
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

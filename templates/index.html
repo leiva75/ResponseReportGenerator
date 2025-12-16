@@ -1,0 +1,2886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a365d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Response Reports">
+    <meta name="description" content="Generate professional security reports for events and venues">
+    <title>Report Listing Response</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/response_logo.png') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='js/watchdog-client.js') }}" defer></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/js/sw.js').catch(function(e) {
+                console.log('SW registration failed:', e);
+            });
+        }
+    </script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content" style="display: flex; justify-content: space-between; align-items: center;">
+            <img src="{{ url_for('static', filename='img/response_logo.png') }}" alt="Response Global Event Security" class="logo">
+            <a href="{{ url_for('history_page') }}" class="btn btn-secondary" style="text-decoration: none;">View History</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Report Listing</h1>
+        <p class="subtitle">Complete the form below to generate your event security report</p>
+
+        {% if error_message %}
+        <div class="alert alert-error" style="background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+            <strong>Error:</strong> {{ error_message }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('index') }}" id="mainForm">
+            
+            <div class="card event-card">
+                <div class="card-header">
+                    <h2>Event Information</h2>
+                    <p class="card-hint">General event details used for security briefs</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="form-row five-cols">
+                        <div class="form-group">
+                            <label for="event_start_date">Start Date</label>
+                            <input type="date" id="event_start_date" name="event_start_date" 
+                                   value="{{ form_data.event_start_date }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="event_end_date">End Date</label>
+                            <input type="date" id="event_end_date" name="event_end_date" 
+                                   value="{{ form_data.event_end_date }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="event_type">Event Type</label>
+                            <input type="text" id="event_type" name="event_type" 
+                                   value="{{ form_data.event_type or 'Disney On Ice' }}" placeholder="e.g., Disney On Ice">
+                        </div>
+                        <div class="form-group autocomplete-container">
+                            <label for="event_city">City</label>
+                            <input type="text" id="event_city" name="event_city" 
+                                   value="{{ form_data.event_city }}" placeholder="Enter city"
+                                   oninput="suggestCity(this.value)" onblur="setTimeout(correctCity, 200)">
+                            <div id="city_suggestions" class="suggestions-dropdown"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="event_country">Country</label>
+                            <select id="event_country" name="event_country" onchange="saveFormData({ event_country: this.value })">
+                                <option value="">Select Country...</option>
+                                <option value="AT" {% if form_data.event_country == 'AT' %}selected{% endif %}>Austria (AT)</option>
+                                <option value="BE" {% if form_data.event_country == 'BE' %}selected{% endif %}>Belgium (BE)</option>
+                                <option value="BG" {% if form_data.event_country == 'BG' %}selected{% endif %}>Bulgaria (BG)</option>
+                                <option value="HR" {% if form_data.event_country == 'HR' %}selected{% endif %}>Croatia (HR)</option>
+                                <option value="CZ" {% if form_data.event_country == 'CZ' %}selected{% endif %}>Czech Republic (CZ)</option>
+                                <option value="DK" {% if form_data.event_country == 'DK' %}selected{% endif %}>Denmark (DK)</option>
+                                <option value="EE" {% if form_data.event_country == 'EE' %}selected{% endif %}>Estonia (EE)</option>
+                                <option value="FI" {% if form_data.event_country == 'FI' %}selected{% endif %}>Finland (FI)</option>
+                                <option value="FR" {% if form_data.event_country == 'FR' %}selected{% endif %}>France (FR)</option>
+                                <option value="DE" {% if form_data.event_country == 'DE' %}selected{% endif %}>Germany (DE)</option>
+                                <option value="GR" {% if form_data.event_country == 'GR' %}selected{% endif %}>Greece (GR)</option>
+                                <option value="HU" {% if form_data.event_country == 'HU' %}selected{% endif %}>Hungary (HU)</option>
+                                <option value="IE" {% if form_data.event_country == 'IE' %}selected{% endif %}>Ireland (IE)</option>
+                                <option value="IT" {% if form_data.event_country == 'IT' %}selected{% endif %}>Italy (IT)</option>
+                                <option value="LV" {% if form_data.event_country == 'LV' %}selected{% endif %}>Latvia (LV)</option>
+                                <option value="LT" {% if form_data.event_country == 'LT' %}selected{% endif %}>Lithuania (LT)</option>
+                                <option value="NL" {% if form_data.event_country == 'NL' %}selected{% endif %}>Netherlands (NL)</option>
+                                <option value="NO" {% if form_data.event_country == 'NO' %}selected{% endif %}>Norway (NO)</option>
+                                <option value="PL" {% if form_data.event_country == 'PL' %}selected{% endif %}>Poland (PL)</option>
+                                <option value="PT" {% if form_data.event_country == 'PT' %}selected{% endif %}>Portugal (PT)</option>
+                                <option value="RO" {% if form_data.event_country == 'RO' %}selected{% endif %}>Romania (RO)</option>
+                                <option value="SK" {% if form_data.event_country == 'SK' %}selected{% endif %}>Slovakia (SK)</option>
+                                <option value="SI" {% if form_data.event_country == 'SI' %}selected{% endif %}>Slovenia (SI)</option>
+                                <option value="ES" {% if form_data.event_country == 'ES' %}selected{% endif %}>Spain (ES)</option>
+                                <option value="SE" {% if form_data.event_country == 'SE' %}selected{% endif %}>Sweden (SE)</option>
+                                <option value="CH" {% if form_data.event_country == 'CH' %}selected{% endif %}>Switzerland (CH)</option>
+                                <option value="GB" {% if form_data.event_country == 'GB' %}selected{% endif %}>United Kingdom (GB)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Security Intelligence Section (V2 - Visual Operational Format) -->
+                    <div class="security-intel-section">
+                        <div class="security-intel-header">
+                            <div>
+                                <h3>Security Intelligence</h3>
+                                <span id="intelLastUpdated" class="last-updated"></span>
+                            </div>
+                            <button type="button" id="loadSecurityIntel" class="btn-intel" onclick="loadSecurityIntelligence()">
+                                Load Intelligence
+                            </button>
+                        </div>
+                        
+                        <!-- Main Intel Container -->
+                        <div id="intelMainContainer">
+                            <!-- Initial State -->
+                            <div id="intelInitialState" class="intel-encart" style="border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <p class="intel-empty">Enter city and country, then click "Load Intelligence"</p>
+                            </div>
+                            
+                            <!-- Loading Skeleton (hidden by default) -->
+                            <div id="intelLoadingSkeleton" style="display: none;">
+                                <div class="intel-skeleton intel-skeleton-kpi">
+                                    <div class="intel-skeleton-kpi-item"></div>
+                                    <div class="intel-skeleton-kpi-item"></div>
+                                    <div class="intel-skeleton-kpi-item"></div>
+                                    <div class="intel-skeleton-kpi-item"></div>
+                                    <div class="intel-skeleton-kpi-item"></div>
+                                </div>
+                                <div class="intel-encart intel-skeleton" style="border-top: none;">
+                                    <div class="intel-skeleton-line medium"></div>
+                                    <div class="intel-skeleton-card">
+                                        <div class="intel-skeleton-line long"></div>
+                                        <div class="intel-skeleton-line short"></div>
+                                    </div>
+                                    <div class="intel-skeleton-card">
+                                        <div class="intel-skeleton-line long"></div>
+                                        <div class="intel-skeleton-line short"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Error State (hidden by default) -->
+                            <div id="intelErrorState" style="display: none;">
+                                <div class="intel-error">
+                                    <div class="intel-error-icon">&#9888;</div>
+                                    <div class="intel-error-message" id="intelErrorMessage">Failed to load intelligence data.</div>
+                                    <button class="btn-retry" onclick="loadSecurityIntelligence()">Retry</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Data Container - SITREP Format (hidden by default) -->
+                            <div id="intelDataContainer" style="display: none;">
+                                <div class="sitrep-container">
+                                    <!-- SITREP Header Line -->
+                                    <div class="sitrep-header">
+                                        <span id="sitrepLocation" class="sitrep-location">CITY, COUNTRY</span>
+                                        <span class="sitrep-separator">|</span>
+                                        <span>RISK:</span>
+                                        <span id="sitrepRisk" class="risk-badge unknown">N/A</span>
+                                        <span class="sitrep-separator">|</span>
+                                        <span>CONF:</span>
+                                        <span id="sitrepConf" class="conf-badge low">LOW</span>
+                                        <span class="sitrep-separator">|</span>
+                                        <span id="sitrepUpdated" class="sitrep-meta">UPDATED: --</span>
+                                        <span class="sitrep-separator">|</span>
+                                        <span id="sitrepSources" class="sitrep-meta">SOURCES: --</span>
+                                        <span class="sitrep-separator">|</span>
+                                        <button type="button" id="copySitrepBtn" class="sitrep-copy-btn" onclick="copySitrep()">COPY</button>
+                                    </div>
+                                    
+                                    <!-- Warning Banner (hidden by default) -->
+                                    <div id="sitrepWarning" class="sitrep-warning" style="display: none;"></div>
+                                    
+                                    <!-- TOP THREATS Section -->
+                                    <div class="sitrep-section sitrep-threats">
+                                        <div class="sitrep-section-title">TOP THREATS</div>
+                                        <div id="sitrepThreats">
+                                            <div class="sitrep-empty">No immediate threats identified</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- INCIDENTS Section -->
+                                    <div class="sitrep-section">
+                                        <div class="sitrep-section-title">INCIDENTS (LAST 30 DAYS)</div>
+                                        <ul id="sitrepIncidents" class="sitrep-list">
+                                            <li class="sitrep-empty">No verified incidents found in the last 30 days</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- DEMONSTRATIONS Section -->
+                                    <div class="sitrep-section">
+                                        <div class="sitrep-section-title">DEMONSTRATIONS (NEXT 14 DAYS)</div>
+                                        <ul id="sitrepDemos" class="sitrep-list">
+                                            <li class="sitrep-empty">No scheduled demonstrations reported</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- NEWS CONTEXT Section -->
+                                    <div class="sitrep-section sitrep-news">
+                                        <div class="sitrep-section-title">NEWS CONTEXT <span class="news-label">(Latest Headlines)</span></div>
+                                        <ul id="sitrepNews" class="sitrep-list sitrep-news-list">
+                                            <li class="sitrep-empty">No recent news available</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- RECOMMENDATIONS Section -->
+                                    <div class="sitrep-section sitrep-recommendations">
+                                        <div class="sitrep-section-title">RECOMMENDATIONS</div>
+                                        <div id="sitrepRecommendations">
+                                            <div class="sitrep-empty">No specific recommendations at this time</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- DATA QUALITY Footer -->
+                                    <div id="sitrepFooter" class="sitrep-footer">
+                                        Scope: -- | Source: -- | Notes: Intelligence data sourced from open databases
+                                    </div>
+                                    
+                                    <!-- Collapsible Map -->
+                                    <div id="intelMapContainer" style="display: none;">
+                                        <button type="button" id="intelMapToggle" class="sitrep-map-toggle" onclick="toggleIntelMap()">
+                                            <span>VIEW INCIDENT MAP</span>
+                                            <span class="toggle-icon">&#9660;</span>
+                                        </button>
+                                        <div id="intelMapWrapper" class="intel-map-wrapper">
+                                            <div id="intelMapDiv"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hotel-card">
+                <div class="card-header">
+                    <h2>Hotel Information</h2>
+                    <p class="card-hint">Enter details about accommodation for the event</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="hotel-inputs-container">
+                        <div class="hotel-box" id="hotel1-box">
+                            <h3 class="hotel-title">{% if form_data.has_two_hotels %}Hotel 1{% else %}Hotel{% endif %}</h3>
+                            <div class="form-row">
+                                <div class="form-group autocomplete-container">
+                                    <label for="hotel1_name">Hotel Name / Chain</label>
+                                    <div class="input-with-button">
+                                        <input type="text" id="hotel1_name" name="hotel1_name" 
+                                               value="{{ form_data.hotel1_name }}" placeholder="e.g., Marriott, Hilton, Novotel..."
+                                               oninput="autoSearchHotel(1, this.value)">
+                                        <button type="button" class="btn btn-sm btn-search" onclick="searchHotel(1)">Search</button>
+                                    </div>
+                                    <div id="hotel1_suggestions" class="suggestions-dropdown"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="hotel1_address">Hotel Address</label>
+                                    <input type="text" id="hotel1_address" name="hotel1_address" 
+                                           value="{{ form_data.hotel1_address }}" placeholder="Enter hotel address">
+                                </div>
+                            </div>
+                            <div class="map-preview" id="hotel1_map_preview">
+                                <div class="map-placeholder">
+                                    <span class="map-icon">🗺️</span>
+                                    <span class="map-text">Map will appear here</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="hotel1_lat" name="hotel1_lat" value="{{ form_data.hotel1_lat }}">
+                            <input type="hidden" id="hotel1_lon" name="hotel1_lon" value="{{ form_data.hotel1_lon }}">
+                        </div>
+
+                        <div class="hotel-box {% if form_data.has_two_hotels %}show{% endif %}" id="hotel2-box">
+                            <h3 class="hotel-title">Hotel 2</h3>
+                            <div class="form-row">
+                                <div class="form-group autocomplete-container">
+                                    <label for="hotel2_name">Hotel Name / Chain</label>
+                                    <div class="input-with-button">
+                                        <input type="text" id="hotel2_name" name="hotel2_name" 
+                                               value="{{ form_data.hotel2_name }}" placeholder="e.g., Marriott, Hilton, Novotel..."
+                                               oninput="autoSearchHotel(2, this.value)">
+                                        <button type="button" class="btn btn-sm btn-search" onclick="searchHotel(2)">Search</button>
+                                    </div>
+                                    <div id="hotel2_suggestions" class="suggestions-dropdown"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="hotel2_address">Hotel Address</label>
+                                    <input type="text" id="hotel2_address" name="hotel2_address" 
+                                           value="{{ form_data.hotel2_address }}" placeholder="Enter hotel address">
+                                </div>
+                            </div>
+                            <div class="map-preview" id="hotel2_map_preview">
+                                <div class="map-placeholder">
+                                    <span class="map-icon">🗺️</span>
+                                    <span class="map-text">Map will appear here</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="hotel2_lat" name="hotel2_lat" value="{{ form_data.hotel2_lat }}">
+                            <input type="hidden" id="hotel2_lon" name="hotel2_lon" value="{{ form_data.hotel2_lon }}">
+                            <button type="submit" name="action" value="remove_hotel" class="btn btn-sm btn-danger">
+                                Remove Hotel 2
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="has_two_hotels" id="has_two_hotels" 
+                           value="{{ 'true' if form_data.has_two_hotels else 'false' }}">
+
+                    <div class="button-row">
+                        {% if not form_data.has_two_hotels %}
+                        <button type="submit" name="action" value="add_hotel" class="btn btn-secondary">
+                            + Add Second Hotel
+                        </button>
+                        {% endif %}
+                        {% if ai_available %}
+                        <button type="button" id="aiHotelBtn" class="btn btn-ai" onclick="aiAssistHotel()">
+                            AI Assist (Hotel)
+                        </button>
+                        {% endif %}
+                        {% if security_ai_available %}
+                        <button type="button" id="securityBriefHotelBtn" class="btn btn-security" onclick="generateSecurityBriefHotel()">
+                            Generate Security Brief
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div id="hotelFetchMessage" class="feedback-message"></div>
+
+                    <hr class="section-divider">
+
+                    <div class="subsection">
+                        <h4>Basic Info</h4>
+                        {% set basic_hotel_fields = [
+                            ('rooms_floors', 'Number of rooms / floors', 'compact'),
+                            ('distance_venue', 'Distance from Venue / Travel time', 'compact')
+                        ] %}
+                        {% for field_key, question, size in basic_hotel_fields %}
+                        <div class="question-block">
+                            <label class="question-label">{{ question }}</label>
+                            <div class="hotel-fields-row {% if form_data.has_two_hotels %}two-hotels{% endif %}">
+                                <div class="hotel-field field--{{ size }} field--auto">
+                                    <span class="field-label">{% if form_data.has_two_hotels %}Hotel 1{% else %}Hotel{% endif %}</span>
+                                    <textarea id="hotel1_{{ field_key }}" name="hotel1_{{ field_key }}" rows="1">{{ form_data['hotel1_' + field_key] }}</textarea>
+                                </div>
+                                <div class="hotel-field hotel2-field field--{{ size }} field--auto {% if form_data.has_two_hotels %}show{% endif %}">
+                                    <span class="field-label">Hotel 2</span>
+                                    <textarea id="hotel2_{{ field_key }}" name="hotel2_{{ field_key }}" rows="1">{{ form_data['hotel2_' + field_key] }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="subsection">
+                        <h4>Facilities & Services</h4>
+                        {% set facilities_fields = [
+                            ('facilities', 'Facilities (Gym, Restaurants, etc.)', 'medium'),
+                            ('wifi', 'WiFi availability', 'compact')
+                        ] %}
+                        {% for field_key, question, size in facilities_fields %}
+                        <div class="question-block">
+                            <label class="question-label">{{ question }}</label>
+                            <div class="hotel-fields-row {% if form_data.has_two_hotels %}two-hotels{% endif %}">
+                                <div class="hotel-field field--{{ size }} field--auto">
+                                    <span class="field-label">{% if form_data.has_two_hotels %}Hotel 1{% else %}Hotel{% endif %}</span>
+                                    <textarea id="hotel1_{{ field_key }}" name="hotel1_{{ field_key }}" rows="1">{{ form_data['hotel1_' + field_key] }}</textarea>
+                                </div>
+                                <div class="hotel-field hotel2-field field--{{ size }} field--auto {% if form_data.has_two_hotels %}show{% endif %}">
+                                    <span class="field-label">Hotel 2</span>
+                                    <textarea id="hotel2_{{ field_key }}" name="hotel2_{{ field_key }}" rows="1">{{ form_data['hotel2_' + field_key] }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="subsection">
+                        <h4>Surrounding Area & Safety</h4>
+                        {% set safety_fields = [
+                            ('surrounding', 'Surrounding facilities (banks, shops, cafes)', 'medium'),
+                            ('safety', 'General safety of surrounding area', 'expanded')
+                        ] %}
+                        {% for field_key, question, size in safety_fields %}
+                        <div class="question-block">
+                            <label class="question-label">{{ question }}</label>
+                            <div class="hotel-fields-row {% if form_data.has_two_hotels %}two-hotels{% endif %}">
+                                <div class="hotel-field field--{{ size }} field--auto">
+                                    <span class="field-label">{% if form_data.has_two_hotels %}Hotel 1{% else %}Hotel{% endif %}</span>
+                                    <textarea id="hotel1_{{ field_key }}" name="hotel1_{{ field_key }}" rows="1">{{ form_data['hotel1_' + field_key] }}</textarea>
+                                </div>
+                                <div class="hotel-field hotel2-field field--{{ size }} field--auto {% if form_data.has_two_hotels %}show{% endif %}">
+                                    <span class="field-label">Hotel 2</span>
+                                    <textarea id="hotel2_{{ field_key }}" name="hotel2_{{ field_key }}" rows="1">{{ form_data['hotel2_' + field_key] }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="subsection">
+                        <h4>Security & Technical</h4>
+                        {% set security_hotel_fields = [
+                            ('security_staff', 'Security staff (Day/Night)', 'compact'),
+                            ('entrances', 'Number and position of entrances', 'medium'),
+                            ('carpark', 'Carpark / Coach-park', 'medium'),
+                            ('cctv_access', 'CCTV / Access Control / Fire Alarm', 'expanded'),
+                            ('condition', 'General condition', 'expanded'),
+                            ('overlapping', 'Overlapping events', 'medium')
+                        ] %}
+                        {% for field_key, question, size in security_hotel_fields %}
+                        <div class="question-block">
+                            <label class="question-label">{{ question }}</label>
+                            <div class="hotel-fields-row {% if form_data.has_two_hotels %}two-hotels{% endif %}">
+                                <div class="hotel-field field--{{ size }} field--auto">
+                                    <span class="field-label">{% if form_data.has_two_hotels %}Hotel 1{% else %}Hotel{% endif %}</span>
+                                    <textarea id="hotel1_{{ field_key }}" name="hotel1_{{ field_key }}" rows="1">{{ form_data['hotel1_' + field_key] }}</textarea>
+                                </div>
+                                <div class="hotel-field hotel2-field field--{{ size }} field--auto {% if form_data.has_two_hotels %}show{% endif %}">
+                                    <span class="field-label">Hotel 2</span>
+                                    <textarea id="hotel2_{{ field_key }}" name="hotel2_{{ field_key }}" rows="1">{{ form_data['hotel2_' + field_key] }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card transport-card">
+                <div class="card-header">
+                    <h2>Transportation</h2>
+                    <p class="card-hint">Details about transport arrangements</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="form-group field--expanded field--auto">
+                        <label for="transport_airport">Transport from Airport / Inter-country Transit</label>
+                        <textarea id="transport_airport" name="transport_airport" rows="2">{{ form_data.transport_airport }}</textarea>
+                    </div>
+                    
+                    <div class="form-group field--xl field--auto">
+                        <label for="transport_description">Description (times, vehicles, photos)</label>
+                        <textarea id="transport_description" name="transport_description" rows="3">{{ form_data.transport_description }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card venue-card">
+                <div class="card-header">
+                    <h2>Venue Information</h2>
+                    <p class="card-hint">Details about the event venue</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="venue-header-row">
+                        <div class="venue-fields">
+                            <div class="form-row">
+                                <div class="form-group autocomplete-container">
+                                    <label for="venue_name">Venue Name</label>
+                                    <div class="input-with-button">
+                                        <input type="text" id="venue_name" name="venue_name" 
+                                               value="{{ form_data.venue_name }}" placeholder="e.g., Jaarbeurs, Palais des Congrès, Parc des Expositions..."
+                                               oninput="autoSearchVenue(this.value)">
+                                        <button type="button" class="btn btn-sm btn-search" onclick="searchVenue()">Search</button>
+                                    </div>
+                                    <div id="venue_suggestions" class="suggestions-dropdown"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="venue_address">Venue Address</label>
+                                    <input type="text" id="venue_address" name="venue_address" 
+                                           value="{{ form_data.venue_address }}" placeholder="Enter venue address">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="venue_expected_capacity">Expected Capacity</label>
+                                <input type="text" id="venue_expected_capacity" name="venue_expected_capacity" 
+                                       value="{{ form_data.venue_expected_capacity }}" placeholder="e.g., 15,000 attendees">
+                            </div>
+                        </div>
+                        <div class="map-preview venue-map" id="venue_map_preview">
+                            <div class="map-placeholder">
+                                <span class="map-icon">🗺️</span>
+                                <span class="map-text">Venue map</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="venue_lat" name="venue_lat" value="{{ form_data.venue_lat }}">
+                        <input type="hidden" id="venue_lon" name="venue_lon" value="{{ form_data.venue_lon }}">
+                    </div>
+                    
+                    <div class="button-row">
+                        {% if ai_available %}
+                        <button type="button" id="aiVenueBtn" class="btn btn-ai" onclick="aiAssistVenue()">
+                            AI Assist (Venue)
+                        </button>
+                        {% endif %}
+                        {% if security_ai_available %}
+                        <button type="button" id="securityBriefVenueBtn" class="btn btn-security" onclick="generateSecurityBriefVenue()">
+                            Generate Security Brief
+                        </button>
+                        {% endif %}
+                        <a href="{{ url_for('security_questionnaire') }}" class="btn btn-questionnaire" id="questionnaireBtn">
+                            Security Meeting Questionnaire
+                        </a>
+                    </div>
+                    <div id="venueFetchMessage" class="feedback-message"></div>
+
+                    <hr class="section-divider">
+
+                    <div class="subsection">
+                        <h4>General Description</h4>
+                        {% set venue_desc_fields = [
+                            ('venue_description', 'Description of venue and surrounding area', 'xl'),
+                            ('venue_photos_video', 'Photos / Video references', 'medium')
+                        ] %}
+                        {% for field_key, label, size in venue_desc_fields %}
+                        <div class="form-group field--{{ size }} field--auto">
+                            <label for="{{ field_key }}">{{ label }}</label>
+                            <textarea id="{{ field_key }}" name="{{ field_key }}" rows="2">{{ form_data[field_key] }}</textarea>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="subsection">
+                        <h4>Access, Parking & Loading</h4>
+                        {% set venue_access_fields = [
+                            ('venue_parking', 'Car parking / Coach / Loading area', 'expanded'),
+                            ('venue_entrance_access', 'Entrance area and access control', 'expanded')
+                        ] %}
+                        {% for field_key, label, size in venue_access_fields %}
+                        <div class="form-group field--{{ size }} field--auto">
+                            <label for="{{ field_key }}">{{ label }}</label>
+                            <textarea id="{{ field_key }}" name="{{ field_key }}" rows="2">{{ form_data[field_key] }}</textarea>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="subsection">
+                        <h4>Inside the Venue</h4>
+                        {% set venue_inside_fields = [
+                            ('venue_branding', 'Branding in Arena / Surrounding Area', 'medium'),
+                            ('venue_tv_advertising', 'TV Commercials / Media Advertising', 'medium'),
+                            ('venue_bowl_seating', 'Bowl and seating area', 'expanded'),
+                            ('venue_covid_provisions', 'COVID-19 provisions', 'medium')
+                        ] %}
+                        {% for field_key, label, size in venue_inside_fields %}
+                        <div class="form-group field--{{ size }} field--auto">
+                            <label for="{{ field_key }}">{{ label }}</label>
+                            <textarea id="{{ field_key }}" name="{{ field_key }}" rows="2">{{ form_data[field_key] }}</textarea>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="subsection">
+                        <h4>Security & Operations</h4>
+                        {% set venue_security_fields = [
+                            ('venue_backstage', 'Backstage / Accreditation / Storage', 'expanded'),
+                            ('venue_response_k9', 'Response - K9 / Sweep / Briefing', 'medium'),
+                            ('venue_fcp_bootleggers', 'FCP - Bootleggers / Scalpers', 'medium'),
+                            ('venue_recommendations', 'Changes / Recommendations', 'xl'),
+                            ('venue_security_provisions', 'Security Provisions / CCTV', 'expanded')
+                        ] %}
+                        {% for field_key, label, size in venue_security_fields %}
+                        <div class="form-group field--{{ size }} field--auto">
+                            <label for="{{ field_key }}">{{ label }}</label>
+                            <textarea id="{{ field_key }}" name="{{ field_key }}" rows="2">{{ form_data[field_key] }}</textarea>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card security-card">
+                <div class="card-header">
+                    <h2>Venue Security</h2>
+                    <p class="card-hint">Security staff positions and equipment (manual input only)</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="security-grid">
+                        {% for key, label in security_items %}
+                        <div class="security-item">
+                            <div class="security-label">{{ label }}</div>
+                            <div class="security-inputs">
+                                <div class="security-count">
+                                    <label for="security_{{ key }}_count">Count</label>
+                                    <input type="number" id="security_{{ key }}_count" 
+                                           name="security_{{ key }}_count" 
+                                           value="{{ form_data['security_' + key + '_count'] }}"
+                                           placeholder="0" min="0">
+                                </div>
+                                <div class="security-comment">
+                                    <label for="security_{{ key }}_comment">Comment</label>
+                                    <input type="text" id="security_{{ key }}_comment" 
+                                           name="security_{{ key }}_comment"
+                                           value="{{ form_data['security_' + key + '_comment'] }}"
+                                           placeholder="Additional notes...">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card actions-card">
+                <div class="card-header">
+                    <h2>Generate Report</h2>
+                    <p class="card-hint">Download your completed report</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="action-buttons">
+                        <button type="button" onclick="saveDraft()" class="btn btn-warning btn-lg" id="saveDraftBtn">
+                            Save Draft
+                        </button>
+                        <button type="button" onclick="submitGenerateForm()" class="btn btn-primary btn-lg">
+                            Generate Word Report
+                        </button>
+                        <button type="button" onclick="submitGeneratePdfForm()" class="btn btn-success btn-lg">
+                            Generate PDF Report
+                        </button>
+                        <button type="button" onclick="confirmNewReport()" class="btn btn-danger btn-lg">
+                            New Report
+                        </button>
+                    </div>
+                    {% if current_draft_id %}
+                    <div class="draft-status" style="margin-top: 15px; padding: 10px 15px; background: #fef3c7; border-radius: 6px; font-size: 14px; color: #92400e;">
+                        You are working on a saved draft. Changes will be saved to this draft.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </form>
+
+        <form method="POST" action="{{ url_for('generate_report') }}" id="generateForm" style="display: none;">
+            <input type="hidden" name="has_two_hotels" value="{{ 'true' if form_data.has_two_hotels else 'false' }}">
+        </form>
+
+        <form method="POST" action="{{ url_for('generate_pdf_report') }}" id="generatePdfForm" style="display: none;">
+            <input type="hidden" name="has_two_hotels" value="{{ 'true' if form_data.has_two_hotels else 'false' }}">
+        </form>
+
+        <form method="POST" action="{{ url_for('new_report') }}" id="newReportForm" style="display: none;"></form>
+    </div>
+
+    <div id="securityBriefModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Security Brief</h2>
+                <button type="button" class="modal-close" onclick="closeSecurityModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="briefLoading" class="brief-loading">
+                    <div class="spinner"></div>
+                    <p>Generating security intelligence brief...</p>
+                </div>
+                <div id="briefContent" class="brief-content markdown-body"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="copyBriefToClipboard()">
+                    Copy to Clipboard
+                </button>
+                <button type="button" class="btn btn-primary" onclick="printBrief()">
+                    Print / Save as PDF
+                </button>
+                <button type="button" class="btn btn-info" onclick="closeSecurityModal()">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var currentBriefMarkdown = '';
+
+        function saveDraft() {
+            var saveDraftBtn = document.getElementById('saveDraftBtn');
+            var originalText = saveDraftBtn.textContent;
+            
+            saveDraftBtn.disabled = true;
+            saveDraftBtn.textContent = 'Sauvegarde...';
+            
+            var formData = new FormData();
+            
+            var allInputs = document.querySelectorAll('#mainForm input, #mainForm textarea');
+            allInputs.forEach(function(input) {
+                if (input.name) {
+                    formData.append(input.name, input.value);
+                }
+            });
+            
+            formData.set('has_two_hotels', document.getElementById('has_two_hotels').value);
+            
+            console.log('Saving draft with fields:');
+            for (var pair of formData.entries()) {
+                if (pair[0].includes('hotel') || pair[0].includes('event') || pair[0].includes('venue')) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
+            }
+            
+            fetch('/save_draft', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    saveDraftBtn.textContent = 'Sauvegardé !';
+                    saveDraftBtn.style.background = '#059669';
+                    setTimeout(function() {
+                        saveDraftBtn.textContent = originalText;
+                        saveDraftBtn.style.background = '';
+                        saveDraftBtn.disabled = false;
+                    }, 2000);
+                } else {
+                    alert('Erreur: ' + result.message);
+                    saveDraftBtn.textContent = originalText;
+                    saveDraftBtn.disabled = false;
+                }
+            })
+            .catch(function(error) {
+                console.error('Save draft error:', error);
+                alert('Erreur lors de la sauvegarde');
+                saveDraftBtn.textContent = originalText;
+                saveDraftBtn.disabled = false;
+            });
+        }
+
+        function getFormData() {
+            var mainForm = document.getElementById('mainForm');
+            var formData = new FormData();
+            formData.append('has_two_hotels', document.getElementById('has_two_hotels').value);
+            
+            var inputs = mainForm.querySelectorAll('input, textarea');
+            inputs.forEach(function(input) {
+                if (input.name && input.name !== 'action') {
+                    formData.append(input.name, input.value);
+                }
+            });
+            return formData;
+        }
+
+        async function downloadWithSaveAs(url, defaultFilename, mimeType) {
+            var formData = getFormData();
+            
+            try {
+                var response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erreur serveur: ' + response.status);
+                }
+                
+                var blob = await response.blob();
+                
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        var extension = defaultFilename.split('.').pop();
+                        var options = {
+                            suggestedName: defaultFilename,
+                            types: [{
+                                description: extension.toUpperCase() + ' Document',
+                                accept: {}
+                            }]
+                        };
+                        options.types[0].accept[mimeType] = ['.' + extension];
+                        
+                        var handle = await window.showSaveFilePicker(options);
+                        var writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        
+                        alert('Document sauvegardé avec succès ! Cliquez sur "New Report" pour créer un nouveau rapport.');
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') {
+                            return;
+                        }
+                    }
+                }
+                
+                var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                
+                if (isIOS) {
+                    var reader = new FileReader();
+                    reader.onloadend = function() {
+                        var newWindow = window.open('', '_blank');
+                        if (newWindow) {
+                            if (mimeType === 'application/pdf') {
+                                newWindow.document.write('<html><head><title>' + defaultFilename + '</title></head><body style="margin:0;padding:0;">');
+                                newWindow.document.write('<embed width="100%" height="100%" src="' + reader.result + '" type="application/pdf">');
+                                newWindow.document.write('</body></html>');
+                            } else {
+                                newWindow.location.href = reader.result;
+                            }
+                            alert('Document ouvert dans un nouvel onglet. Utilisez le bouton de partage pour le sauvegarder.');
+                        } else {
+                            var blobUrl = URL.createObjectURL(blob);
+                            window.location.href = blobUrl;
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                } else {
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = defaultFilename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                    
+                    alert('Document téléchargé ! Cliquez sur "New Report" pour créer un nouveau rapport.');
+                }
+                
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Erreur lors de la génération: ' + error.message);
+            }
+        }
+
+        function submitGenerateForm() {
+            var venueName = document.getElementById('venue_name').value.trim() || 'Report';
+            var safeName = venueName.replace(/[^a-zA-Z0-9\-_\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+            var filename = 'Security_Report_' + safeName + '.docx';
+            downloadWithSaveAs('/generate', filename, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        }
+
+        function submitGeneratePdfForm() {
+            var venueName = document.getElementById('venue_name').value.trim() || 'Report';
+            var safeName = venueName.replace(/[^a-zA-Z0-9\-_\s]/g, '').replace(/\s+/g, '_').substring(0, 50);
+            var filename = 'Security_Report_' + safeName + '.pdf';
+            downloadWithSaveAs('/generate_pdf', filename, 'application/pdf');
+        }
+
+        function confirmNewReport() {
+            if (confirm('Are you sure you want to clear all data and start a new report?')) {
+                document.getElementById('newReportForm').submit();
+            }
+        }
+
+        function generateSecurityBriefHotel() {
+            var btn = document.getElementById('securityBriefHotelBtn');
+            var messageDiv = document.getElementById('hotelFetchMessage');
+            
+            var hotel1Name = document.getElementById('hotel1_name').value.trim();
+            var hotel1Address = document.getElementById('hotel1_address').value.trim();
+            
+            if (!hotel1Name && !hotel1Address) {
+                showMessage(messageDiv, 'Please enter a hotel name or address first.', 'warning');
+                return;
+            }
+            
+            openSecurityModal('Hotel Security Brief');
+            
+            var startDate = document.getElementById('event_start_date').value.trim();
+            var endDate = document.getElementById('event_end_date').value.trim();
+            var eventDates = startDate && endDate ? startDate + ' to ' + endDate : startDate || endDate;
+            
+            var data = {
+                hotel_name: hotel1Name,
+                hotel_address: hotel1Address,
+                city: document.getElementById('event_city').value.trim(),
+                event_date: eventDates,
+                event_type: document.getElementById('event_type').value.trim()
+            };
+            
+            fetch('/security_brief_hotel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                if (result.success && result.brief) {
+                    currentBriefMarkdown = result.brief;
+                    displayBrief(result.brief);
+                } else {
+                    displayBriefError(result.message || 'Failed to generate security brief.');
+                }
+            })
+            .catch(function(error) {
+                console.error('Security brief error:', error);
+                displayBriefError('Network error. Please try again.');
+            });
+        }
+
+        function generateSecurityBriefVenue() {
+            var btn = document.getElementById('securityBriefVenueBtn');
+            var messageDiv = document.getElementById('venueFetchMessage');
+            
+            var venueName = document.getElementById('venue_name').value.trim();
+            var venueAddress = document.getElementById('venue_address').value.trim();
+            
+            if (!venueName && !venueAddress) {
+                showMessage(messageDiv, 'Please enter a venue name or address first.', 'warning');
+                return;
+            }
+            
+            openSecurityModal('Venue Security Brief');
+            
+            var startDateV = document.getElementById('event_start_date').value.trim();
+            var endDateV = document.getElementById('event_end_date').value.trim();
+            var eventDatesV = startDateV && endDateV ? startDateV + ' to ' + endDateV : startDateV || endDateV;
+            
+            var data = {
+                venue_name: venueName,
+                venue_address: venueAddress,
+                city: document.getElementById('event_city').value.trim(),
+                event_date: eventDatesV,
+                event_type: document.getElementById('event_type').value.trim(),
+                expected_capacity: document.getElementById('venue_expected_capacity').value.trim()
+            };
+            
+            fetch('/security_brief_venue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                if (result.success && result.brief) {
+                    currentBriefMarkdown = result.brief;
+                    displayBrief(result.brief);
+                } else {
+                    displayBriefError(result.message || 'Failed to generate security brief.');
+                }
+            })
+            .catch(function(error) {
+                console.error('Security brief error:', error);
+                displayBriefError('Network error. Please try again.');
+            });
+        }
+
+        function openSecurityModal(title) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('briefLoading').style.display = 'block';
+            document.getElementById('briefContent').style.display = 'none';
+            document.getElementById('briefContent').innerHTML = '';
+            document.getElementById('securityBriefModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            currentBriefMarkdown = '';
+        }
+
+        function closeSecurityModal() {
+            document.getElementById('securityBriefModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function displayBrief(markdown) {
+            document.getElementById('briefLoading').style.display = 'none';
+            var contentDiv = document.getElementById('briefContent');
+            contentDiv.innerHTML = parseMarkdown(markdown);
+            contentDiv.style.display = 'block';
+        }
+
+        function displayBriefError(message) {
+            document.getElementById('briefLoading').style.display = 'none';
+            var contentDiv = document.getElementById('briefContent');
+            contentDiv.innerHTML = '<div class="brief-error"><p>' + escapeHtml(message) + '</p></div>';
+            contentDiv.style.display = 'block';
+        }
+
+        function parseMarkdown(md) {
+            var html = md
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+                .replace(/\*\*([^*]+)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/gim, '<em>$1</em>')
+                .replace(/^\d+\.\s+(.*)$/gim, '<li class="numbered">$1</li>')
+                .replace(/^-\s+(.*)$/gim, '<li>$1</li>')
+                .replace(/\n\n/gim, '</p><p>')
+                .replace(/\n/gim, '<br>');
+            
+            html = '<p>' + html + '</p>';
+            html = html.replace(/<p>(<h[234]>)/gim, '$1');
+            html = html.replace(/(<\/h[234]>)<\/p>/gim, '$1');
+            html = html.replace(/<p>(<li)/gim, '<ul>$1');
+            html = html.replace(/(<\/li>)<\/p>/gim, '$1</ul>');
+            
+            return html;
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyBriefToClipboard() {
+            if (!currentBriefMarkdown) {
+                alert('No brief content to copy.');
+                return;
+            }
+            
+            navigator.clipboard.writeText(currentBriefMarkdown).then(function() {
+                alert('Security brief copied to clipboard!');
+            }).catch(function(err) {
+                var textarea = document.createElement('textarea');
+                textarea.value = currentBriefMarkdown;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Security brief copied to clipboard!');
+            });
+        }
+
+        function printBrief() {
+            var printWindow = window.open('', '_blank');
+            var content = document.getElementById('briefContent').innerHTML;
+            
+            printWindow.document.write('<html><head><title>Security Brief</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }');
+            printWindow.document.write('h2 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 8px; margin-top: 24px; }');
+            printWindow.document.write('h3 { color: #2d3748; margin-top: 16px; }');
+            printWindow.document.write('strong { color: #c53030; }');
+            printWindow.document.write('ul { margin: 12px 0; padding-left: 24px; }');
+            printWindow.document.write('li { margin: 6px 0; }');
+            printWindow.document.write('li.numbered { list-style-type: decimal; }');
+            printWindow.document.write('@media print { body { margin: 20px; } }');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write(content);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            
+            setTimeout(function() {
+                printWindow.print();
+            }, 250);
+        }
+
+        function aiAssistHotel() {
+            var btn = document.getElementById('aiHotelBtn');
+            var messageDiv = document.getElementById('hotelFetchMessage');
+            var originalText = btn.textContent;
+            
+            var hotel1Name = document.getElementById('hotel1_name').value.trim();
+            var hotel1Address = document.getElementById('hotel1_address').value.trim();
+            
+            if (!hotel1Name && !hotel1Address) {
+                showMessage(messageDiv, 'Please enter a hotel name or address first.', 'warning');
+                return;
+            }
+            
+            btn.textContent = 'AI analyzing...';
+            btn.disabled = true;
+            messageDiv.textContent = '';
+            messageDiv.className = 'feedback-message';
+            
+            fetch('/ai_assist_hotel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hotel_name: hotel1Name, hotel_address: hotel1Address })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                var filledCount = 0;
+                var skippedCount = 0;
+                var dataFieldCount = 0;
+                if (result.data) {
+                    for (var k in result.data) {
+                        if (result.data[k] && result.data[k].trim && result.data[k].trim()) {
+                            dataFieldCount++;
+                        }
+                    }
+                    var counts = updateHotelFields('hotel1', result.data);
+                    filledCount = counts.filled;
+                    skippedCount = counts.skipped;
+                }
+                var msg = result.message;
+                var msgType = result.success ? 'success' : 'warning';
+                if (result.success && filledCount > 0) {
+                    msg = filledCount + ' fields filled by AI.';
+                    if (skippedCount > 0) {
+                        msg += ' ' + skippedCount + ' fields skipped (already have data).';
+                    }
+                } else if (result.success && skippedCount > 0 && filledCount === 0) {
+                    msg = 'All fields already have data. AI suggestions were not applied.';
+                } else if (result.success && dataFieldCount === 0) {
+                    msg = 'AI could not find detailed information for this hotel. Please fill in manually.';
+                    msgType = 'warning';
+                }
+                showMessage(messageDiv, msg, msgType);
+            })
+            .catch(function(error) {
+                console.error('AI assist error:', error);
+                showMessage(messageDiv, 'AI assistant error. Please try again.', 'error');
+            })
+            .finally(function() {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            });
+        }
+
+        function updateHotelFields(prefix, data) {
+            var fieldMapping = {
+                'rooms_floors': 'rooms_floors',
+                'distance_venue': 'distance_venue',
+                'facilities': 'facilities',
+                'wifi': 'wifi',
+                'surrounding': 'surrounding',
+                'safety': 'safety',
+                'security_staff': 'security_staff',
+                'entrances': 'entrances',
+                'carpark': 'carpark',
+                'cctv_access': 'cctv_access',
+                'condition': 'condition',
+                'overlapping': 'overlapping'
+            };
+            
+            var updatedFields = {};
+            var filledCount = 0;
+            var skippedCount = 0;
+            
+            for (var key in fieldMapping) {
+                var fieldId = prefix + '_' + fieldMapping[key];
+                var field = document.getElementById(fieldId);
+                if (field && data[key]) {
+                    if (!field.value.trim()) {
+                        field.value = data[key];
+                        updatedFields[fieldId] = data[key];
+                        filledCount++;
+                    } else {
+                        skippedCount++;
+                    }
+                }
+            }
+            
+            if (Object.keys(updatedFields).length > 0) {
+                saveFormData(updatedFields);
+            }
+            
+            return { filled: filledCount, skipped: skippedCount };
+        }
+
+        function aiAssistVenue() {
+            var btn = document.getElementById('aiVenueBtn');
+            var messageDiv = document.getElementById('venueFetchMessage');
+            var originalText = btn.textContent;
+            
+            var venueName = document.getElementById('venue_name').value.trim();
+            var venueAddress = document.getElementById('venue_address').value.trim();
+            
+            if (!venueName && !venueAddress) {
+                showMessage(messageDiv, 'Please enter a venue name or address first.', 'warning');
+                return;
+            }
+            
+            btn.textContent = 'AI analyzing...';
+            btn.disabled = true;
+            messageDiv.textContent = '';
+            messageDiv.className = 'feedback-message';
+            
+            fetch('/ai_assist_venue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ venue_name: venueName, venue_address: venueAddress })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                if (result.data) {
+                    updateVenueFieldsAI(result.data);
+                }
+                showMessage(messageDiv, result.message, result.success ? 'success' : 'warning');
+            })
+            .catch(function(error) {
+                console.error('AI assist error:', error);
+                showMessage(messageDiv, 'AI assistant error. Please try again.', 'error');
+            })
+            .finally(function() {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            });
+        }
+
+        function updateVenueFields(data) {
+            var fieldMapping = {
+                'description': 'venue_description',
+                'photos_video': 'venue_photos_video',
+                'parking': 'venue_parking',
+                'entrance_access': 'venue_entrance_access',
+                'branding': 'venue_branding',
+                'tv_advertising': 'venue_tv_advertising',
+                'bowl_seating': 'venue_bowl_seating',
+                'covid_provisions': 'venue_covid_provisions',
+                'backstage': 'venue_backstage',
+                'response_k9': 'venue_response_k9',
+                'fcp_bootleggers': 'venue_fcp_bootleggers',
+                'recommendations': 'venue_recommendations',
+                'security_provisions': 'venue_security_provisions'
+            };
+            
+            var updatedFields = {};
+            
+            for (var key in fieldMapping) {
+                var fieldId = fieldMapping[key];
+                var field = document.getElementById(fieldId);
+                if (field && data[key] && !field.value.trim()) {
+                    field.value = data[key];
+                    updatedFields[fieldId] = data[key];
+                }
+            }
+            
+            if (Object.keys(updatedFields).length > 0) {
+                saveFormData(updatedFields);
+            }
+        }
+
+        function updateVenueFieldsAI(data) {
+            var fieldMapping = {
+                'description': 'venue_description',
+                'parking': 'venue_parking',
+                'entrance_access': 'venue_entrance_access',
+                'branding': 'venue_branding',
+                'tv_advertising': 'venue_tv_advertising',
+                'bowl_seating': 'venue_bowl_seating',
+                'covid_provisions': 'venue_covid_provisions',
+                'backstage': 'venue_backstage',
+                'security_provisions': 'venue_security_provisions'
+            };
+            
+            var updatedFields = {};
+            
+            for (var key in fieldMapping) {
+                var fieldId = fieldMapping[key];
+                var field = document.getElementById(fieldId);
+                if (field && data[key] && !field.value.trim()) {
+                    field.value = data[key];
+                    updatedFields[fieldId] = data[key];
+                }
+            }
+            
+            if (Object.keys(updatedFields).length > 0) {
+                saveFormData(updatedFields);
+            }
+        }
+
+        function saveFormData(data) {
+            fetch('/save_form', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                console.log('Form data saved:', result.message);
+            })
+            .catch(function(error) {
+                console.error('Error saving form data:', error);
+            });
+        }
+        
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = 'feedback-message feedback-' + type;
+        }
+
+        function updateHotelLabels(hasTwoHotels) {
+            var hotel1Title = document.querySelector('#hotel1-box .hotel-title');
+            var fieldLabels = document.querySelectorAll('.hotel-field .field-label');
+            
+            if (hotel1Title) {
+                hotel1Title.textContent = hasTwoHotels ? 'Hotel 1' : 'Hotel';
+            }
+            
+            fieldLabels.forEach(function(label) {
+                var parentField = label.closest('.hotel-field');
+                if (parentField && !parentField.classList.contains('hotel2-field')) {
+                    label.textContent = hasTwoHotels ? 'Hotel 1' : 'Hotel';
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var hasTwoHotels = document.getElementById('has_two_hotels').value === 'true';
+            if (hasTwoHotels) {
+                updateHotelLabels(true);
+            }
+            
+            var fieldsToAutoSave = [
+                'event_start_date', 'event_end_date', 'event_type', 
+                'event_city', 'event_country',
+                'hotel1_name', 'hotel1_address', 'hotel2_name', 'hotel2_address',
+                'venue_name', 'venue_address'
+            ];
+            
+            fieldsToAutoSave.forEach(function(fieldId) {
+                var field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('change', function() {
+                        var data = {};
+                        data[fieldId] = field.value;
+                        saveFormData(data);
+                    });
+                    if (field.type !== 'date') {
+                        field.addEventListener('blur', function() {
+                            var data = {};
+                            data[fieldId] = field.value;
+                            saveFormData(data);
+                        });
+                    }
+                }
+            });
+        });
+
+        window.onclick = function(event) {
+            var modal = document.getElementById('securityBriefModal');
+            if (event.target === modal) {
+                closeSecurityModal();
+            }
+        };
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeSecurityModal();
+            }
+        });
+
+        var hotelSearchPending = {};
+        var venueSearchPending = false;
+
+        var CITIES = [
+            'Amsterdam', 'Antwerp', 'Anvers', 'Athens', 'Athènes', 'Barcelona', 'Barcelone',
+            'Basel', 'Bâle', 'Belfast', 'Belgrade', 'Berlin', 'Bern', 'Berne', 'Bilbao',
+            'Birmingham', 'Bologna', 'Bologne', 'Bordeaux', 'Bratislava', 'Bremen', 'Brême',
+            'Brno', 'Brussels', 'Bruxelles', 'Bucharest', 'Bucarest', 'Budapest', 'Cardiff',
+            'Cologne', 'Köln', 'Copenhagen', 'Copenhague', 'Cork', 'Dortmund', 'Dresden',
+            'Dresde', 'Dublin', 'Düsseldorf', 'Edinburgh', 'Édimbourg', 'Eindhoven',
+            'Essen', 'Florence', 'Firenze', 'Frankfurt', 'Francfort', 'Geneva', 'Genève',
+            'Genoa', 'Gênes', 'Glasgow', 'Gothenburg', 'Göteborg', 'Graz', 'Hamburg',
+            'Hambourg', 'Hannover', 'Hanovre', 'Helsinki', 'Innsbruck', 'Istanbul',
+            'Kiev', 'Kyiv', 'Krakow', 'Cracovie', 'Leeds', 'Leipzig', 'Lille', 'Lisbon',
+            'Lisbonne', 'Liverpool', 'Ljubljana', 'London', 'Londres', 'Lyon', 'Madrid',
+            'Málaga', 'Malaga', 'Manchester', 'Mannheim', 'Marseille', 'Milan', 'Milano',
+            'Monaco', 'Moscow', 'Moscou', 'Munich', 'München', 'Nantes', 'Naples', 'Napoli',
+            'Newcastle', 'Nice', 'Nottingham', 'Nuremberg', 'Nürnberg', 'Oslo', 'Palermo',
+            'Palerme', 'Paris', 'Porto', 'Prague', 'Praha', 'Riga', 'Rome', 'Roma',
+            'Rotterdam', 'Salzburg', 'Salzbourg', 'Sarajevo', 'Seville', 'Séville',
+            'Sheffield', 'Sofia', 'Stockholm', 'Strasbourg', 'Stuttgart', 'Tallinn',
+            'The Hague', 'La Haye', 'Thessaloniki', 'Toulouse', 'Turin', 'Torino',
+            'Utrecht', 'Valencia', 'Valence', 'Venice', 'Venise', 'Vienna', 'Vienne',
+            'Vilnius', 'Warsaw', 'Varsovie', 'Zagreb', 'Zurich', 'Zürich',
+            'Abu Dhabi', 'Abou Dabi', 'Dubai', 'Dubaï', 'Doha', 'Riyadh', 'Riyad',
+            'Tokyo', 'Osaka', 'Seoul', 'Séoul', 'Beijing', 'Pékin', 'Shanghai',
+            'Hong Kong', 'Singapore', 'Singapour', 'Sydney', 'Melbourne', 'Auckland',
+            'New York', 'Los Angeles', 'Chicago', 'Toronto', 'Montreal', 'Montréal',
+            'Mexico City', 'Mexico', 'São Paulo', 'Buenos Aires', 'Santiago', 'Lima',
+            'Johannesburg', 'Cape Town', 'Le Cap', 'Cairo', 'Le Caire', 'Casablanca',
+            'Oberhausen', 'Dusseldorf', 'Arnhem', 'Groningen', 'Maastricht', 'Breda',
+            'Tilburg', 'Den Haag', 'Zwolle', 'Enschede', 'Almere', 'Amersfoort'
+        ];
+
+        var COUNTRIES = [
+            'Afghanistan', 'Albania', 'Algeria', 'Allemagne', 'Andorra', 'Angola', 'Argentina', 'Armenia',
+            'Australia', 'Austria', 'Autriche', 'Azerbaijan', 'Bahrain', 'Bangladesh', 'Belarus', 'Belgium',
+            'Belgique', 'Benin', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brésil',
+            'Bulgaria', 'Bulgarie', 'Burkina Faso', 'Cambodia', 'Cameroon', 'Canada', 'Chile', 'Chili',
+            'China', 'Chine', 'Colombia', 'Colombie', 'Costa Rica', 'Croatia', 'Croatie', 'Cuba', 'Cyprus',
+            'Chypre', 'Czech Republic', 'Czechia', 'République Tchèque', 'Denmark', 'Danemark',
+            'Dominican Republic', 'Ecuador', 'Egypt', 'Egypte', 'El Salvador', 'Estonia', 'Estonie',
+            'Ethiopia', 'Finland', 'Finlande', 'France', 'Gabon', 'Georgia', 'Géorgie', 'Germany',
+            'Ghana', 'Greece', 'Grèce', 'Guatemala', 'Guinea', 'Haiti', 'Honduras', 'Hong Kong',
+            'Hungary', 'Hongrie', 'Iceland', 'Islande', 'India', 'Inde', 'Indonesia', 'Indonésie',
+            'Iran', 'Iraq', 'Irak', 'Ireland', 'Irlande', 'Israel', 'Israël', 'Italy', 'Italie',
+            'Ivory Coast', 'Côte d\'Ivoire', 'Jamaica', 'Jamaïque', 'Japan', 'Japon', 'Jordan', 'Jordanie',
+            'Kazakhstan', 'Kenya', 'Kuwait', 'Koweït', 'Kyrgyzstan', 'Latvia', 'Lettonie', 'Lebanon',
+            'Liban', 'Libya', 'Libye', 'Liechtenstein', 'Lithuania', 'Lituanie', 'Luxembourg',
+            'Madagascar', 'Malaysia', 'Malaisie', 'Mali', 'Malta', 'Malte', 'Mauritius', 'Maurice',
+            'Mexico', 'Mexique', 'Moldova', 'Moldavie', 'Monaco', 'Mongolia', 'Mongolie', 'Montenegro',
+            'Monténégro', 'Morocco', 'Maroc', 'Mozambique', 'Myanmar', 'Namibia', 'Namibie',
+            'Netherlands', 'Pays-Bas', 'New Zealand', 'Nouvelle-Zélande', 'Nicaragua', 'Niger', 'Nigeria',
+            'Nigéria', 'North Macedonia', 'Macédoine du Nord', 'Norway', 'Norvège', 'Oman', 'Pakistan',
+            'Palestine', 'Panama', 'Paraguay', 'Peru', 'Pérou', 'Philippines', 'Poland', 'Pologne',
+            'Portugal', 'Qatar', 'Romania', 'Roumanie', 'Russia', 'Russie', 'Rwanda', 'Saudi Arabia',
+            'Arabie Saoudite', 'Senegal', 'Sénégal', 'Serbia', 'Serbie', 'Singapore', 'Singapour',
+            'Slovakia', 'Slovaquie', 'Slovenia', 'Slovénie', 'South Africa', 'Afrique du Sud',
+            'South Korea', 'Corée du Sud', 'Spain', 'Espagne', 'Sri Lanka', 'Sudan', 'Soudan',
+            'Sweden', 'Suède', 'Switzerland', 'Suisse', 'Syria', 'Syrie', 'Taiwan', 'Taïwan',
+            'Tanzania', 'Tanzanie', 'Thailand', 'Thaïlande', 'Togo', 'Tunisia', 'Tunisie', 'Turkey',
+            'Turquie', 'UAE', 'Émirats Arabes Unis', 'Uganda', 'Ouganda', 'UK', 'United Kingdom',
+            'Royaume-Uni', 'Ukraine', 'United States', 'USA', 'États-Unis', 'Uruguay', 'Uzbekistan',
+            'Ouzbékistan', 'Venezuela', 'Vietnam', 'Viêt Nam', 'Yemen', 'Yémen', 'Zambia', 'Zambie',
+            'Zimbabwe'
+        ];
+
+        function normalizeStr(str) {
+            return str.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z]/g, '');
+        }
+
+        function fuzzyMatch(input, target) {
+            var normInput = normalizeStr(input);
+            var normTarget = normalizeStr(target);
+            if (normTarget.indexOf(normInput) !== -1) return true;
+            if (normInput.length < 2) return false;
+            var matches = 0;
+            for (var i = 0; i < normInput.length; i++) {
+                if (normTarget.indexOf(normInput[i]) !== -1) matches++;
+            }
+            return matches / normInput.length >= 0.7;
+        }
+
+        function suggestCountry(value) {
+            var suggestionsDiv = document.getElementById('country_suggestions');
+            suggestionsDiv.innerHTML = '';
+            
+            if (!value || value.length < 1) {
+                suggestionsDiv.classList.remove('show');
+                return;
+            }
+            
+            var normalizedValue = normalizeStr(value);
+            var matches = COUNTRIES.filter(function(country) {
+                var normalizedCountry = normalizeStr(country);
+                return normalizedCountry.startsWith(normalizedValue) || fuzzyMatch(value, country);
+            });
+            
+            matches.sort(function(a, b) {
+                var aStarts = normalizeStr(a).startsWith(normalizedValue);
+                var bStarts = normalizeStr(b).startsWith(normalizedValue);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                return a.localeCompare(b);
+            });
+            
+            matches = matches.slice(0, 10);
+            
+            if (matches.length > 0) {
+                matches.forEach(function(country) {
+                    var item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.textContent = country;
+                    item.addEventListener('click', function() {
+                        var countryInput = document.getElementById('event_country');
+                        var oldCountry = countryInput.value.trim().toLowerCase();
+                        var newCountry = country.toLowerCase();
+                        countryInput.value = country;
+                        suggestionsDiv.classList.remove('show');
+                        saveFormData({ event_country: country });
+                        if (oldCountry && oldCountry !== newCountry) {
+                            document.getElementById('event_city').value = '';
+                            document.getElementById('city_suggestions').classList.remove('show');
+                            saveFormData({ event_city: '' });
+                        }
+                    });
+                    suggestionsDiv.appendChild(item);
+                });
+                suggestionsDiv.classList.add('show');
+            } else {
+                suggestionsDiv.classList.remove('show');
+            }
+        }
+
+        function correctCountry() {
+            var input = document.getElementById('event_country');
+            var value = input.value.trim();
+            if (!value) return;
+            
+            var exactMatch = COUNTRIES.find(function(c) {
+                return c.toLowerCase() === value.toLowerCase();
+            });
+            if (exactMatch) {
+                input.value = exactMatch;
+                saveFormData({ event_country: exactMatch });
+                return;
+            }
+            
+            var bestMatch = null;
+            var bestScore = 0;
+            COUNTRIES.forEach(function(country) {
+                var normInput = normalizeStr(value);
+                var normCountry = normalizeStr(country);
+                if (normCountry.indexOf(normInput) === 0 || normInput.indexOf(normCountry) === 0) {
+                    var score = Math.min(normInput.length, normCountry.length) / Math.max(normInput.length, normCountry.length);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMatch = country;
+                    }
+                }
+            });
+            
+            if (bestMatch && bestScore >= 0.6) {
+                input.value = bestMatch;
+            }
+        }
+
+        var citySearchTimeout = null;
+        
+        function suggestCity(value) {
+            var suggestionsDiv = document.getElementById('city_suggestions');
+            
+            if (!value || value.length < 2) {
+                suggestionsDiv.innerHTML = '';
+                suggestionsDiv.classList.remove('show');
+                return;
+            }
+            
+            if (citySearchTimeout) {
+                clearTimeout(citySearchTimeout);
+            }
+            
+            citySearchTimeout = setTimeout(function() {
+                var country = document.getElementById('event_country').value.trim();
+                
+                fetch('/search_cities', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: value, country: country })
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    suggestionsDiv.innerHTML = '';
+                    
+                    if (data.success && data.results && data.results.length > 0) {
+                        data.results.forEach(function(city) {
+                            var item = document.createElement('div');
+                            item.className = 'suggestion-item';
+                            
+                            var nameDiv = document.createElement('div');
+                            nameDiv.className = 'suggestion-name';
+                            nameDiv.textContent = city.name;
+                            item.appendChild(nameDiv);
+                            
+                            if (city.state || city.country) {
+                                var addressDiv = document.createElement('div');
+                                addressDiv.className = 'suggestion-address';
+                                var parts = [];
+                                if (city.state) parts.push(city.state);
+                                if (city.country) parts.push(city.country);
+                                addressDiv.textContent = parts.join(', ');
+                                item.appendChild(addressDiv);
+                            }
+                            
+                            item.addEventListener('click', function() {
+                                document.getElementById('event_city').value = city.name;
+                                if (city.country && !document.getElementById('event_country').value) {
+                                    document.getElementById('event_country').value = city.country;
+                                }
+                                suggestionsDiv.classList.remove('show');
+                                saveFormData({ event_city: city.name });
+                            });
+                            suggestionsDiv.appendChild(item);
+                        });
+                        suggestionsDiv.classList.add('show');
+                    } else {
+                        suggestionsDiv.classList.remove('show');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('City search error:', error);
+                    suggestionsDiv.classList.remove('show');
+                });
+            }, 300);
+        }
+
+        function correctCity() {
+            var input = document.getElementById('event_city');
+            var value = input.value.trim();
+            if (!value) return;
+            saveFormData({ event_city: value });
+        }
+
+        function createSuggestionItem(name, address, onClick, venueType) {
+            var item = document.createElement('div');
+            item.className = 'suggestion-item';
+            
+            var nameDiv = document.createElement('div');
+            nameDiv.className = 'suggestion-name';
+            
+            if (venueType) {
+                nameDiv.innerHTML = name + ' <span class="venue-type-badge">' + venueType + '</span>';
+            } else {
+                nameDiv.textContent = name;
+            }
+            
+            var addressDiv = document.createElement('div');
+            addressDiv.className = 'suggestion-address';
+            addressDiv.textContent = address;
+            
+            item.appendChild(nameDiv);
+            item.appendChild(addressDiv);
+            item.addEventListener('click', onClick);
+            
+            return item;
+        }
+
+        var leafletMaps = {};
+
+        function showLocationMap(previewId, lat, lon, name, latInputId, lonInputId) {
+            var container = document.getElementById(previewId);
+            if (!container) return;
+            
+            if (!lat || !lon) {
+                container.innerHTML = '<div class="map-placeholder"><span class="map-icon">🗺️</span><span class="map-text">No location data</span></div>';
+                container.classList.remove('has-map');
+                return;
+            }
+            
+            container.innerHTML = '';
+            container.classList.add('has-map');
+            
+            var mapDiv = document.createElement('div');
+            mapDiv.style.width = '100%';
+            mapDiv.style.height = '100%';
+            mapDiv.id = previewId + '_leaflet';
+            container.appendChild(mapDiv);
+            
+            if (leafletMaps[previewId]) {
+                leafletMaps[previewId].remove();
+            }
+            
+            var map = L.map(mapDiv.id, {
+                scrollWheelZoom: false,
+                zoomControl: true
+            }).setView([lat, lon], 15);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19
+            }).addTo(map);
+            
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup('<strong>' + name + '</strong>')
+                .openPopup();
+            
+            leafletMaps[previewId] = map;
+            
+            if (latInputId) {
+                var latInput = document.getElementById(latInputId);
+                if (latInput) latInput.value = lat;
+            }
+            if (lonInputId) {
+                var lonInput = document.getElementById(lonInputId);
+                if (lonInput) lonInput.value = lon;
+            }
+            
+            var dataToSave = {};
+            if (latInputId) dataToSave[latInputId] = lat;
+            if (lonInputId) dataToSave[lonInputId] = lon;
+            if (Object.keys(dataToSave).length > 0) {
+                saveFormData(dataToSave);
+            }
+            
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 100);
+        }
+        
+        function loadExistingMaps() {
+            var hotel1Lat = document.getElementById('hotel1_lat');
+            var hotel1Lon = document.getElementById('hotel1_lon');
+            var hotel1Name = document.getElementById('hotel1_name');
+            
+            if (hotel1Lat && hotel1Lon && hotel1Lat.value && hotel1Lon.value) {
+                showLocationMap('hotel1_map_preview', parseFloat(hotel1Lat.value), parseFloat(hotel1Lon.value), 
+                    hotel1Name ? hotel1Name.value : 'Hotel 1', null, null);
+            }
+            
+            var hotel2Lat = document.getElementById('hotel2_lat');
+            var hotel2Lon = document.getElementById('hotel2_lon');
+            var hotel2Name = document.getElementById('hotel2_name');
+            
+            if (hotel2Lat && hotel2Lon && hotel2Lat.value && hotel2Lon.value) {
+                showLocationMap('hotel2_map_preview', parseFloat(hotel2Lat.value), parseFloat(hotel2Lon.value), 
+                    hotel2Name ? hotel2Name.value : 'Hotel 2', null, null);
+            }
+            
+            var venueLat = document.getElementById('venue_lat');
+            var venueLon = document.getElementById('venue_lon');
+            var venueName = document.getElementById('venue_name');
+            
+            if (venueLat && venueLon && venueLat.value && venueLon.value) {
+                showLocationMap('venue_map_preview', parseFloat(venueLat.value), parseFloat(venueLon.value), 
+                    venueName ? venueName.value : 'Venue', null, null);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadExistingMaps);
+
+        var hotelAutoSearchTimeout = {};
+        var hotelAutoSearchPending = {};
+
+        function autoSearchHotel(hotelNum, value) {
+            var suggestionsDiv = document.getElementById('hotel' + hotelNum + '_suggestions');
+            
+            if (hotelAutoSearchTimeout[hotelNum]) {
+                clearTimeout(hotelAutoSearchTimeout[hotelNum]);
+            }
+            
+            if (!value || value.length < 2) {
+                suggestionsDiv.innerHTML = '';
+                suggestionsDiv.classList.remove('show');
+                return;
+            }
+            
+            var city = document.getElementById('event_city').value.trim();
+            var country = document.getElementById('event_country').value.trim();
+            
+            if (!city && !country) {
+                suggestionsDiv.innerHTML = '<div class="suggestion-item suggestion-warning">Please enter a city or country first</div>';
+                suggestionsDiv.classList.add('show');
+                return;
+            }
+            
+            hotelAutoSearchTimeout[hotelNum] = setTimeout(function() {
+                if (hotelAutoSearchPending[hotelNum]) return;
+                hotelAutoSearchPending[hotelNum] = true;
+                
+                fetch('/search_hotels', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: value, city: city, country: country })
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    suggestionsDiv.innerHTML = '';
+                    if (result.success && result.results && result.results.length > 0) {
+                        result.results.forEach(function(item) {
+                            var suggestionItem = createSuggestionItem(item.name, item.address, function() {
+                                document.getElementById('hotel' + hotelNum + '_name').value = item.name;
+                                document.getElementById('hotel' + hotelNum + '_address').value = item.address;
+                                suggestionsDiv.classList.remove('show');
+                                var dataToSave = {};
+                                dataToSave['hotel' + hotelNum + '_name'] = item.name;
+                                dataToSave['hotel' + hotelNum + '_address'] = item.address;
+                                saveFormData(dataToSave);
+                                showLocationMap('hotel' + hotelNum + '_map_preview', item.lat, item.lon, item.name, 
+                                    'hotel' + hotelNum + '_lat', 'hotel' + hotelNum + '_lon');
+                            });
+                            suggestionsDiv.appendChild(suggestionItem);
+                        });
+                        suggestionsDiv.classList.add('show');
+                    } else {
+                        suggestionsDiv.classList.remove('show');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Auto hotel search error:', error);
+                    suggestionsDiv.classList.remove('show');
+                })
+                .finally(function() {
+                    hotelAutoSearchPending[hotelNum] = false;
+                });
+            }, 400);
+        }
+
+        function searchHotel(hotelNum) {
+            if (hotelSearchPending[hotelNum]) return;
+            
+            var nameInput = document.getElementById('hotel' + hotelNum + '_name');
+            var suggestionsDiv = document.getElementById('hotel' + hotelNum + '_suggestions');
+            var searchBtn = nameInput.parentElement.querySelector('.btn-search');
+            var city = document.getElementById('event_city').value.trim();
+            var countryEl = document.getElementById('event_country');
+            var country = countryEl ? countryEl.value.trim() : '';
+            var query = nameInput.value.trim();
+            
+            if (!query) {
+                suggestionsDiv.classList.remove('show');
+                return;
+            }
+            
+            hotelSearchPending[hotelNum] = true;
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            
+            fetch('/search_hotels', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query, city: city, country: country })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                suggestionsDiv.innerHTML = '';
+                if (result.success && result.results.length > 0) {
+                    result.results.forEach(function(item) {
+                        var suggestionItem = createSuggestionItem(item.name, item.address, function() {
+                            document.getElementById('hotel' + hotelNum + '_name').value = item.name;
+                            document.getElementById('hotel' + hotelNum + '_address').value = item.address;
+                            suggestionsDiv.classList.remove('show');
+                            var dataToSave = {};
+                            dataToSave['hotel' + hotelNum + '_name'] = item.name;
+                            dataToSave['hotel' + hotelNum + '_address'] = item.address;
+                            saveFormData(dataToSave);
+                            showLocationMap('hotel' + hotelNum + '_map_preview', item.lat, item.lon, item.name, 
+                                'hotel' + hotelNum + '_lat', 'hotel' + hotelNum + '_lon');
+                        });
+                        suggestionsDiv.appendChild(suggestionItem);
+                    });
+                    suggestionsDiv.classList.add('show');
+                } else {
+                    var noResults = document.createElement('div');
+                    noResults.className = 'suggestion-item';
+                    noResults.textContent = 'No results found';
+                    suggestionsDiv.appendChild(noResults);
+                    suggestionsDiv.classList.add('show');
+                }
+            })
+            .catch(function(error) {
+                console.error('Search error:', error);
+                suggestionsDiv.classList.remove('show');
+            })
+            .finally(function() {
+                hotelSearchPending[hotelNum] = false;
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            });
+        }
+
+        function searchVenue() {
+            if (venueSearchPending) return;
+            
+            var nameInput = document.getElementById('venue_name');
+            var suggestionsDiv = document.getElementById('venue_suggestions');
+            var searchBtn = nameInput.parentElement.querySelector('.btn-search');
+            var cityEl = document.getElementById('event_city');
+            var countryEl = document.getElementById('event_country');
+            var city = cityEl ? cityEl.value.trim() : '';
+            var country = countryEl ? countryEl.value.trim() : '';
+            var query = nameInput.value.trim();
+            
+            if (!query) {
+                suggestionsDiv.classList.remove('show');
+                return;
+            }
+            
+            var searchCity = city;
+            if (country && city) {
+                searchCity = city + ', ' + country;
+            } else if (country) {
+                searchCity = country;
+            }
+            
+            console.log('Venue search:', query, 'in', searchCity);
+            
+            venueSearchPending = true;
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            
+            fetch('/search_venues', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query, city: searchCity })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                console.log('Venue search result:', result);
+                suggestionsDiv.innerHTML = '';
+                if (result.success && result.results && result.results.length > 0) {
+                    result.results.forEach(function(item) {
+                        var suggestionItem = createSuggestionItem(item.name, item.address, function() {
+                            document.getElementById('venue_name').value = item.name;
+                            document.getElementById('venue_address').value = item.address;
+                            suggestionsDiv.classList.remove('show');
+                            saveFormData({
+                                'venue_name': item.name,
+                                'venue_address': item.address
+                            });
+                            showLocationMap('venue_map_preview', item.lat, item.lon, item.name, 'venue_lat', 'venue_lon');
+                        }, item.venue_type || '');
+                        suggestionsDiv.appendChild(suggestionItem);
+                    });
+                    suggestionsDiv.classList.add('show');
+                } else {
+                    var noResults = document.createElement('div');
+                    noResults.className = 'suggestion-item';
+                    noResults.textContent = 'Aucun résultat trouvé';
+                    suggestionsDiv.appendChild(noResults);
+                    suggestionsDiv.classList.add('show');
+                }
+            })
+            .catch(function(error) {
+                console.error('Search error:', error);
+                var errorDiv = document.createElement('div');
+                errorDiv.className = 'suggestion-item';
+                errorDiv.textContent = 'Erreur de recherche';
+                suggestionsDiv.innerHTML = '';
+                suggestionsDiv.appendChild(errorDiv);
+                suggestionsDiv.classList.add('show');
+            })
+            .finally(function() {
+                venueSearchPending = false;
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            });
+        }
+
+        var venueAutoSearchTimeout = null;
+        var venueAutoSearchPending = false;
+
+        function updateQuestionnaireButton() {
+            var venueNameEl = document.getElementById('venue_name');
+            var btn = document.getElementById('questionnaireBtn');
+            if (btn && venueNameEl) {
+                if (venueNameEl.value.trim()) {
+                    btn.classList.remove('disabled');
+                    btn.removeAttribute('title');
+                } else {
+                    btn.classList.add('disabled');
+                    btn.setAttribute('title', 'Please enter a venue name first');
+                }
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            updateQuestionnaireButton();
+            var venueNameEl = document.getElementById('venue_name');
+            if (venueNameEl) {
+                venueNameEl.addEventListener('input', updateQuestionnaireButton);
+                venueNameEl.addEventListener('change', updateQuestionnaireButton);
+            }
+        });
+
+        function autoSearchVenue(value) {
+            var suggestionsDiv = document.getElementById('venue_suggestions');
+            updateQuestionnaireButton();
+            
+            if (venueAutoSearchTimeout) {
+                clearTimeout(venueAutoSearchTimeout);
+            }
+            
+            if (!value || value.length < 2) {
+                suggestionsDiv.innerHTML = '';
+                suggestionsDiv.classList.remove('show');
+                return;
+            }
+            
+            var cityEl = document.getElementById('event_city');
+            var countryEl = document.getElementById('event_country');
+            var city = cityEl ? cityEl.value.trim() : '';
+            var country = countryEl ? countryEl.value.trim() : '';
+            
+            if (!city && !country) {
+                suggestionsDiv.innerHTML = '<div class="suggestion-item suggestion-warning">Veuillez entrer une ville ou un pays d\'abord</div>';
+                suggestionsDiv.classList.add('show');
+                return;
+            }
+            
+            venueAutoSearchTimeout = setTimeout(function() {
+                if (venueAutoSearchPending) return;
+                
+                var searchCity = city;
+                if (country && city) {
+                    searchCity = city + ', ' + country;
+                } else if (country) {
+                    searchCity = country;
+                }
+                
+                venueAutoSearchPending = true;
+                
+                fetch('/search_venues', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: value, city: searchCity })
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    suggestionsDiv.innerHTML = '';
+                    if (result.success && result.results && result.results.length > 0) {
+                        result.results.forEach(function(item) {
+                            var suggestionItem = createSuggestionItem(item.name, item.address, function() {
+                                document.getElementById('venue_name').value = item.name;
+                                document.getElementById('venue_address').value = item.address;
+                                suggestionsDiv.classList.remove('show');
+                                saveFormData({
+                                    'venue_name': item.name,
+                                    'venue_address': item.address
+                                });
+                                showLocationMap('venue_map_preview', item.lat, item.lon, item.name, 'venue_lat', 'venue_lon');
+                            }, item.venue_type || '');
+                            suggestionsDiv.appendChild(suggestionItem);
+                        });
+                        suggestionsDiv.classList.add('show');
+                    } else {
+                        suggestionsDiv.classList.remove('show');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Auto search error:', error);
+                    suggestionsDiv.classList.remove('show');
+                })
+                .finally(function() {
+                    venueAutoSearchPending = false;
+                });
+            }, 300);
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-container')) {
+                document.querySelectorAll('.suggestions-dropdown').forEach(function(d) {
+                    d.classList.remove('show');
+                });
+            }
+        });
+
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            var minHeight = parseInt(window.getComputedStyle(textarea).minHeight) || 40;
+            textarea.style.height = Math.max(textarea.scrollHeight, minHeight) + 'px';
+        }
+
+        function initAutoResizeTextareas() {
+            var autoTextareas = document.querySelectorAll('.field--auto textarea');
+            autoTextareas.forEach(function(textarea) {
+                autoResizeTextarea(textarea);
+                textarea.addEventListener('input', function() {
+                    autoResizeTextarea(this);
+                });
+                textarea.addEventListener('change', function() {
+                    autoResizeTextarea(this);
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initAutoResizeTextareas);
+        
+        var originalUpdateHotelFields = updateHotelFields;
+        updateHotelFields = function(prefix, data) {
+            var result = originalUpdateHotelFields(prefix, data);
+            setTimeout(function() {
+                var autoTextareas = document.querySelectorAll('.field--auto textarea');
+                autoTextareas.forEach(function(textarea) {
+                    autoResizeTextarea(textarea);
+                });
+            }, 50);
+            return result;
+        };
+        
+        var originalUpdateVenueFields = updateVenueFields;
+        updateVenueFields = function(data) {
+            originalUpdateVenueFields(data);
+            setTimeout(function() {
+                var autoTextareas = document.querySelectorAll('.field--auto textarea');
+                autoTextareas.forEach(function(textarea) {
+                    autoResizeTextarea(textarea);
+                });
+            }, 50);
+        };
+    </script>
+
+    <!-- City Security Brief Sliding Modal -->
+    <div id="securityBriefModal" class="security-brief-modal">
+        <div class="security-brief-panel">
+            <div class="security-brief-header">
+                <h2><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> City Security Brief</h2>
+                <button type="button" class="security-brief-close" onclick="closeSecurityBrief()">&times;</button>
+            </div>
+            <div class="security-brief-body" id="securityBriefBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .security-brief-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .security-brief-modal.open {
+            display: block;
+            opacity: 1;
+        }
+        .security-brief-panel {
+            position: fixed;
+            top: 0;
+            right: -500px;
+            width: 500px;
+            max-width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            box-shadow: -5px 0 30px rgba(0, 0, 0, 0.3);
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .security-brief-modal.open .security-brief-panel {
+            right: 0;
+        }
+        .security-brief-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .security-brief-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            font-size: 1.3rem;
+            color: #00d4ff;
+        }
+        .security-brief-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .security-brief-close:hover {
+            color: #fff;
+        }
+        .security-brief-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .security-brief-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #888;
+        }
+        .security-brief-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 212, 255, 0.2);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .security-brief-error {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .security-brief-result {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+        }
+        .security-brief-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .security-brief-title {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        .security-brief-risk {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .risk-low { background: rgba(40,167,69,0.2); color: #28a745; border: 1px solid rgba(40,167,69,0.3); }
+        .risk-moderate { background: rgba(255,193,7,0.2); color: #ffc107; border: 1px solid rgba(255,193,7,0.3); }
+        .risk-high { background: rgba(220,53,69,0.2); color: #dc3545; border: 1px solid rgba(220,53,69,0.3); }
+        .security-brief-text {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .security-brief-copy {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #888;
+            padding: 6px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .security-brief-copy:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+        .security-brief-sources {
+            margin-top: 15px;
+        }
+        .security-brief-sources-toggle {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #888;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            width: 100%;
+            text-align: left;
+        }
+        .security-brief-sources-toggle:hover {
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+        .security-brief-sources-list {
+            display: none;
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .security-brief-sources-list.open {
+            display: block;
+        }
+        .security-brief-source-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.8rem;
+        }
+        .security-brief-source-item a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+        .security-brief-disclaimer {
+            margin-top: 20px;
+            padding: 12px;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #ffc107;
+        }
+        @media (max-width: 520px) {
+            .security-brief-panel {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
+
+    <script>
+        var securityBriefText = '';
+
+        function openCitySecurityBrief() {
+            var city = document.getElementById('event_city').value.trim();
+            var country = document.getElementById('event_country').value.trim();
+            
+            if (!city || !country) {
+                alert('Veuillez d\'abord entrer une ville et un pays dans la section Event Information.');
+                return;
+            }
+            
+            var modal = document.getElementById('securityBriefModal');
+            var body = document.getElementById('securityBriefBody');
+            
+            body.innerHTML = '<div class="security-brief-loading"><div class="spinner"></div><p>Gathering security intelligence...</p></div>';
+            
+            modal.style.display = 'block';
+            setTimeout(function() {
+                modal.classList.add('open');
+            }, 10);
+            
+            fetch('/api/security-brief', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ city: city, country: country })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    displaySecurityBrief(data.brief, data.text_brief);
+                } else {
+                    body.innerHTML = '<div class="security-brief-error">Failed to generate brief: ' + (data.error || 'Unknown error') + '</div>';
+                }
+            })
+            .catch(function(err) {
+                body.innerHTML = '<div class="security-brief-error">Network error. Please try again.</div>';
+                console.error(err);
+            });
+        }
+
+        function displaySecurityBrief(brief, textBrief) {
+            securityBriefText = textBrief;
+            var body = document.getElementById('securityBriefBody');
+            
+            var riskClass = 'risk-' + brief.risk_level.toLowerCase();
+            
+            var sourcesHtml = '';
+            if (brief.source_details && brief.source_details.length > 0) {
+                brief.source_details.forEach(function(src) {
+                    sourcesHtml += '<div class="security-brief-source-item"><span>' + src.source + '</span>';
+                    if (src.url) {
+                        sourcesHtml += '<a href="' + src.url + '" target="_blank">View</a>';
+                    }
+                    sourcesHtml += '</div>';
+                });
+            } else {
+                sourcesHtml = '<p style="color: #888; margin: 0;">No external links available</p>';
+            }
+            
+            body.innerHTML = 
+                '<div class="security-brief-result">' +
+                    '<div class="security-brief-meta">' +
+                        '<div class="security-brief-title">' + brief.city + ', ' + brief.country + '<br><small style="color:#666">' + brief.generated_at + '</small></div>' +
+                        '<div><span class="security-brief-risk ' + riskClass + '">Risk: ' + brief.risk_level + '</span><br><small style="color:#666">Confidence: ' + brief.confidence + '</small></div>' +
+                    '</div>' +
+                    '<div class="security-brief-text">' +
+                        '<button class="security-brief-copy" onclick="copySecurityBrief()">Copy</button>' +
+                        '<pre style="margin:0;white-space:pre-wrap;font-family:inherit;">' + escapeHtml(textBrief) + '</pre>' +
+                    '</div>' +
+                    '<div class="security-brief-sources">' +
+                        '<button class="security-brief-sources-toggle" onclick="toggleSecuritySources()">▶ View Sources</button>' +
+                        '<div class="security-brief-sources-list" id="securitySourcesList">' + sourcesHtml + '</div>' +
+                    '</div>' +
+                    '<div class="security-brief-disclaimer">⚠️ ' + brief.disclaimer + '</div>' +
+                '</div>';
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function closeSecurityBrief() {
+            var modal = document.getElementById('securityBriefModal');
+            modal.classList.remove('open');
+            setTimeout(function() {
+                modal.style.display = 'none';
+            }, 300);
+        }
+
+        function copySecurityBrief() {
+            navigator.clipboard.writeText(securityBriefText).then(function() {
+                var btn = document.querySelector('.security-brief-copy');
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+            });
+        }
+
+        function toggleSecuritySources() {
+            var list = document.getElementById('securitySourcesList');
+            var btn = document.querySelector('.security-brief-sources-toggle');
+            if (list.classList.contains('open')) {
+                list.classList.remove('open');
+                btn.textContent = '▶ View Sources';
+            } else {
+                list.classList.add('open');
+                btn.textContent = '▼ Hide Sources';
+            }
+        }
+
+        var intelMap = null;
+        var intelMarkers = [];
+        
+        var ISO2_TO_COUNTRY = {
+            'AT': 'Austria', 'BE': 'Belgium', 'BG': 'Bulgaria', 'HR': 'Croatia',
+            'CZ': 'Czech Republic', 'DK': 'Denmark', 'EE': 'Estonia', 'FI': 'Finland',
+            'FR': 'France', 'DE': 'Germany', 'GR': 'Greece', 'HU': 'Hungary',
+            'IE': 'Ireland', 'IT': 'Italy', 'LV': 'Latvia', 'LT': 'Lithuania',
+            'NL': 'Netherlands', 'NO': 'Norway', 'PL': 'Poland', 'PT': 'Portugal',
+            'RO': 'Romania', 'SK': 'Slovakia', 'SI': 'Slovenia', 'ES': 'Spain',
+            'SE': 'Sweden', 'CH': 'Switzerland', 'GB': 'United Kingdom'
+        };
+        
+        function loadSecurityIntelligence() {
+            var city = document.getElementById('event_city').value.trim();
+            var countryCode = document.getElementById('event_country').value.trim();
+            var country = ISO2_TO_COUNTRY[countryCode] || countryCode;
+            
+            if (!city || !country) {
+                alert('Please enter a city and country first.');
+                return;
+            }
+            
+            var btn = document.getElementById('loadSecurityIntel');
+            var initialState = document.getElementById('intelInitialState');
+            var loadingSkeleton = document.getElementById('intelLoadingSkeleton');
+            var errorState = document.getElementById('intelErrorState');
+            var dataContainer = document.getElementById('intelDataContainer');
+            var lastUpdatedSpan = document.getElementById('intelLastUpdated');
+            
+            btn.disabled = true;
+            btn.textContent = 'LOADING...';
+            initialState.style.display = 'none';
+            errorState.style.display = 'none';
+            dataContainer.style.display = 'none';
+            loadingSkeleton.style.display = 'block';
+            
+            fetch('/api/security-intel?city=' + encodeURIComponent(city) + '&country=' + encodeURIComponent(country))
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = 'LOAD INTELLIGENCE';
+                loadingSkeleton.style.display = 'none';
+                
+                if (data.success) {
+                    dataContainer.style.display = 'block';
+                    
+                    var inc = data.incidents_30d || {};
+                    var demos = data.demonstrations_14d || {};
+                    var risk = data.risk_assessment || {};
+                    var meta = data.meta || {};
+                    
+                    renderSitrepHeader(city, country, risk, meta);
+                    renderSitrepThreats(inc.items || [], demos.items || [], risk);
+                    renderSitrepIncidents(inc.items || []);
+                    renderSitrepDemos(demos.items || [], demos.planned_demos || []);
+                    renderSitrepNews(data.news_context || {});
+                    renderSitrepRecommendations(risk);
+                    renderSitrepFooter(meta);
+                    
+                    if (meta.updated_at) {
+                        var d = new Date(meta.updated_at);
+                        lastUpdatedSpan.textContent = 'Updated: ' + d.toLocaleString();
+                    }
+                    
+                    setupIntelMap(meta, inc.items || [], demos.items || []);
+                } else {
+                    errorState.style.display = 'block';
+                    document.getElementById('intelErrorMessage').textContent = data.error || 'Failed to load intelligence data.';
+                }
+            })
+            .catch(function(err) {
+                btn.disabled = false;
+                btn.textContent = 'LOAD INTELLIGENCE';
+                loadingSkeleton.style.display = 'none';
+                errorState.style.display = 'block';
+                document.getElementById('intelErrorMessage').textContent = 'Network error. Please try again.';
+                console.error(err);
+            });
+        }
+        
+        var currentSitrepData = null;
+        
+        function renderSitrepHeader(city, country, risk, meta) {
+            currentSitrepData = { city: city, country: country, risk: risk, meta: meta };
+            
+            document.getElementById('sitrepLocation').textContent = city.toUpperCase() + ', ' + country.toUpperCase();
+            
+            var riskLevel = (risk.overall_risk || 'unknown').toLowerCase();
+            var riskBadge = document.getElementById('sitrepRisk');
+            riskBadge.textContent = (risk.overall_risk || 'N/A').toUpperCase();
+            riskBadge.className = 'risk-badge ' + riskLevel;
+            
+            var confidence = (meta.confidence || 'low').toLowerCase();
+            var confBadge = document.getElementById('sitrepConf');
+            confBadge.textContent = (meta.confidence || 'LOW').toUpperCase();
+            confBadge.className = 'conf-badge ' + confidence;
+            
+            if (meta.updated_at) {
+                var d = new Date(meta.updated_at);
+                document.getElementById('sitrepUpdated').textContent = 'UPDATED: ' + d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+            
+            document.getElementById('sitrepSources').textContent = 'SOURCES: ' + (meta.data_sources_display || meta.primary_source || '--');
+            
+            var warningBanner = document.getElementById('sitrepWarning');
+            var warnings = risk.warnings || [];
+            if (warnings.length > 0) {
+                warningBanner.innerHTML = '<span class="warning-icon">&#9888;</span> ' + escapeHtmlIntel(warnings[0]);
+                warningBanner.style.display = 'block';
+            } else {
+                warningBanner.style.display = 'none';
+            }
+        }
+        
+        function copySitrep() {
+            if (!currentSitrepData) return;
+            
+            var city = currentSitrepData.city.toUpperCase();
+            var country = currentSitrepData.country.toUpperCase();
+            var risk = currentSitrepData.risk;
+            var meta = currentSitrepData.meta;
+            
+            var riskLevel = (risk.overall_risk || 'UNKNOWN').toUpperCase();
+            var confidence = (meta.confidence || 'LOW').toUpperCase();
+            
+            var briefing = 'SITREP ' + city + ', ' + country + ' | RISK: ' + riskLevel + ' | CONF: ' + confidence;
+            
+            if (risk.drivers && risk.drivers.length > 0) {
+                var remaining = 220 - briefing.length - 3;
+                if (remaining > 10) {
+                    var threat = risk.drivers[0];
+                    if (threat.length > remaining) {
+                        threat = threat.substring(0, remaining - 3) + '...';
+                    }
+                    briefing += ' | ' + threat;
+                }
+            }
+            
+            if (briefing.length > 220) {
+                briefing = briefing.substring(0, 217) + '...';
+            }
+            
+            var btn = document.getElementById('copySitrepBtn');
+            var originalText = btn.textContent;
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(briefing).then(function() {
+                    btn.textContent = 'COPIED';
+                    btn.classList.add('copied');
+                    setTimeout(function() {
+                        btn.textContent = originalText;
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }).catch(function() {
+                    fallbackCopy(briefing, btn, originalText);
+                });
+            } else {
+                fallbackCopy(briefing, btn, originalText);
+            }
+        }
+        
+        function fallbackCopy(text, btn, originalText) {
+            var textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                btn.textContent = 'COPIED';
+                btn.classList.add('copied');
+            } catch (e) {
+                btn.textContent = 'FAILED';
+            }
+            document.body.removeChild(textarea);
+            setTimeout(function() {
+                btn.textContent = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+        
+        function renderSitrepThreats(incidents, demos, risk) {
+            var container = document.getElementById('sitrepThreats');
+            var threats = [];
+            
+            if (risk.drivers && risk.drivers.length > 0) {
+                threats = risk.drivers.slice(0, 3);
+            } else {
+                var allItems = incidents.concat(demos);
+                allItems.sort(function(a, b) {
+                    var dateA = new Date(a.date || a.datetime || 0);
+                    var dateB = new Date(b.date || b.datetime || 0);
+                    return dateB - dateA;
+                });
+                threats = allItems.slice(0, 3).map(function(item) {
+                    var summary = item.summary || item.notes || item.location || 'Unspecified event';
+                    return summary.length > 110 ? summary.substring(0, 107) + '...' : summary;
+                });
+            }
+            
+            if (threats.length === 0) {
+                container.innerHTML = '<div class="sitrep-empty">No immediate threats identified</div>';
+                return;
+            }
+            
+            var html = '';
+            threats.forEach(function(threat) {
+                html += '<div class="sitrep-threat-item">';
+                html += '<span class="sitrep-threat-bullet">&#9654;</span>';
+                html += '<span>' + escapeHtmlIntel(threat) + '</span>';
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        }
+        
+        function renderSitrepIncidents(items) {
+            var container = document.getElementById('sitrepIncidents');
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<li class="sitrep-empty">No verified incidents found in the last 30 days</li>';
+                return;
+            }
+            
+            var html = '';
+            items.slice(0, 10).forEach(function(item) {
+                var sev = getSeverityLevel(item);
+                var dateStr = formatSitrepDate(item.date || item.datetime);
+                var category = (item.category || 'INCIDENT').toUpperCase();
+                if (category.length > 12) category = category.substring(0, 12);
+                var summary = item.summary || item.notes || 'No description';
+                var source = item.source || '';
+                
+                html += '<li class="sitrep-list-item">';
+                html += '<span class="sitrep-sev ' + sev + '">' + sev.toUpperCase().substring(0, 3) + '</span>';
+                html += '<span class="sitrep-date">' + dateStr + '</span>';
+                html += '<span class="sitrep-cat">' + escapeHtmlIntel(category) + '</span>';
+                html += '<span class="sitrep-summary">' + escapeHtmlIntel(summary) + '</span>';
+                if (source) {
+                    html += '<span class="sitrep-source">(' + escapeHtmlIntel(source) + ')</span>';
+                }
+                html += '</li>';
+            });
+            container.innerHTML = html;
+        }
+        
+        function renderSitrepDemos(items, plannedDemos) {
+            var container = document.getElementById('sitrepDemos');
+            
+            if ((!items || items.length === 0) && (!plannedDemos || plannedDemos.length === 0)) {
+                container.innerHTML = '<li class="sitrep-empty">No scheduled demonstrations reported</li>';
+                return;
+            }
+            
+            var html = '';
+            items.slice(0, 8).forEach(function(item) {
+                var likelihood = 'info';
+                var dateStr = formatSitrepDate(item.date || item.datetime);
+                var location = item.location || '--';
+                if (location.length > 20) location = location.substring(0, 17) + '...';
+                var theme = item.category || item.summary || 'Demonstration';
+                var source = item.source || '';
+                
+                html += '<li class="sitrep-list-item">';
+                html += '<span class="sitrep-sev ' + likelihood + '">LKY</span>';
+                html += '<span class="sitrep-date">' + dateStr + '</span>';
+                html += '<span class="sitrep-cat">' + escapeHtmlIntel(location) + '</span>';
+                html += '<span class="sitrep-summary">' + escapeHtmlIntel(theme) + '</span>';
+                if (source) {
+                    html += '<span class="sitrep-source">(' + escapeHtmlIntel(source) + ')</span>';
+                }
+                html += '</li>';
+            });
+            
+            if (plannedDemos && plannedDemos.length > 0) {
+                plannedDemos.slice(0, 3).forEach(function(demo) {
+                    html += '<li class="sitrep-list-item planned-demo">';
+                    html += '<span class="sitrep-sev low">PLAN</span>';
+                    html += '<span class="sitrep-date">' + escapeHtmlIntel(demo.extracted_date || 'TBD') + '</span>';
+                    html += '<span class="sitrep-cat" style="color: #f59e0b;">' + escapeHtmlIntel(demo.label || 'announced') + '</span>';
+                    var title = demo.title || '';
+                    if (title.length > 50) title = title.substring(0, 47) + '...';
+                    html += '<span class="sitrep-summary">' + escapeHtmlIntel(title) + '</span>';
+                    if (demo.source) {
+                        html += '<span class="sitrep-source">(' + escapeHtmlIntel(demo.source) + ')</span>';
+                    }
+                    html += '</li>';
+                });
+            }
+            container.innerHTML = html;
+        }
+        
+        function renderSitrepNews(newsContext) {
+            var container = document.getElementById('sitrepNews');
+            var items = newsContext.items || [];
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<li class="sitrep-empty">No recent news available</li>';
+                return;
+            }
+            
+            var html = '';
+            items.slice(0, 5).forEach(function(item) {
+                var title = item.title || 'Untitled';
+                var source = item.source || 'Unknown';
+                var date = item.date || '';
+                var url = item.url || '';
+                
+                html += '<li class="sitrep-list-item">';
+                html += '<span class="news-source">' + escapeHtmlIntel(source) + '</span>';
+                html += '<span class="sitrep-date">' + formatSitrepDate(date) + '</span>';
+                if (url) {
+                    html += '<span class="news-title"><a href="' + escapeHtmlIntel(url) + '" target="_blank" rel="noopener">' + escapeHtmlIntel(title.substring(0, 80)) + '</a></span>';
+                } else {
+                    html += '<span class="news-title">' + escapeHtmlIntel(title.substring(0, 80)) + '</span>';
+                }
+                html += '</li>';
+            });
+            container.innerHTML = html;
+        }
+        
+        function renderSitrepRecommendations(risk) {
+            var container = document.getElementById('sitrepRecommendations');
+            var recommendations = [];
+            
+            if (risk.operational_notes && risk.operational_notes.length > 0) {
+                recommendations = risk.operational_notes.slice(0, 5);
+            } else {
+                var level = (risk.overall_risk || 'low').toLowerCase();
+                if (level === 'high') {
+                    recommendations = [
+                        'Establish enhanced perimeter security protocols',
+                        'Brief security team on local threat indicators',
+                        'Coordinate with local law enforcement for event support',
+                        'Plan alternative transport routes for principals',
+                        'Maintain heightened situational awareness throughout event'
+                    ];
+                } else if (level === 'medium') {
+                    recommendations = [
+                        'Standard security protocols with enhanced monitoring',
+                        'Brief team on current local conditions',
+                        'Establish communication protocols with local authorities'
+                    ];
+                } else {
+                    recommendations = [
+                        'Maintain standard security protocols',
+                        'Monitor local news and conditions periodically'
+                    ];
+                }
+            }
+            
+            if (recommendations.length === 0) {
+                container.innerHTML = '<div class="sitrep-empty">No specific recommendations at this time</div>';
+                return;
+            }
+            
+            var html = '';
+            recommendations.forEach(function(rec) {
+                html += '<div class="sitrep-rec-item">';
+                html += '<span class="sitrep-rec-bullet">&#10003;</span>';
+                html += '<span>' + escapeHtmlIntel(rec) + '</span>';
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        }
+        
+        function renderSitrepFooter(meta) {
+            var scope = meta.scope_used || 'City/Country';
+            var source = meta.data_sources_display || meta.primary_source || '--';
+            var notes = meta.is_news_based ? 'News-based data may have inherent reporting delays' : 'Intelligence data sourced from open databases';
+            
+            document.getElementById('sitrepFooter').textContent = 'Scope: ' + scope + ' | Source: ' + source + ' | Notes: ' + notes;
+        }
+        
+        function getSeverityLevel(item) {
+            var fatalities = item.fatalities || 0;
+            var category = (item.category || '').toLowerCase();
+            
+            if (fatalities > 5 || category.indexOf('explosion') >= 0 || category.indexOf('attack') >= 0) {
+                return 'critical';
+            } else if (fatalities > 0 || category.indexOf('riot') >= 0 || category.indexOf('violence') >= 0) {
+                return 'high';
+            } else if (category.indexOf('protest') >= 0 || category.indexOf('demonstration') >= 0) {
+                return 'medium';
+            } else {
+                return 'low';
+            }
+        }
+        
+        function formatSitrepDate(dateStr) {
+            if (!dateStr) return '--';
+            try {
+                var d = new Date(dateStr);
+                var year = d.getFullYear();
+                var month = String(d.getMonth() + 1).padStart(2, '0');
+                var day = String(d.getDate()).padStart(2, '0');
+                return year + '-' + month + '-' + day;
+            } catch (e) {
+                return dateStr.substring(0, 10);
+            }
+        }
+        
+        function setupIntelMap(meta, incidents, demos) {
+            var allItems = incidents.concat(demos);
+            var hasCoords = allItems.some(function(item) {
+                return item.latitude && item.longitude;
+            });
+            
+            var mapContainer = document.getElementById('intelMapContainer');
+            
+            if (!hasCoords) {
+                mapContainer.style.display = 'none';
+                return;
+            }
+            
+            mapContainer.style.display = 'block';
+            
+            if (intelMarkers.length > 0) {
+                intelMarkers.forEach(function(m) { m.remove(); });
+                intelMarkers = [];
+            }
+            
+            var centerLat = meta.user_lat || 48.8566;
+            var centerLon = meta.user_lon || 2.3522;
+            
+            if (!intelMap) {
+                var mapDiv = document.getElementById('intelMapDiv');
+                mapDiv.style.height = '280px';
+                intelMap = L.map('intelMapDiv').setView([centerLat, centerLon], 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(intelMap);
+            } else {
+                intelMap.setView([centerLat, centerLon], 10);
+            }
+            
+            var incidentIcon = L.divIcon({
+                className: 'intel-map-marker',
+                html: '<div style="background:#dc2626;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);">!</div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+            
+            var demoIcon = L.divIcon({
+                className: 'intel-map-marker',
+                html: '<div style="background:#f59e0b;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);">D</div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+            
+            incidents.forEach(function(item) {
+                if (item.latitude && item.longitude) {
+                    var marker = L.marker([item.latitude, item.longitude], {icon: incidentIcon})
+                        .bindPopup('<strong>' + escapeHtmlIntel(item.category || 'Incident') + '</strong><br>' + escapeHtmlIntel(item.summary || item.location || '') + '<br><small>' + escapeHtmlIntel(item.date || '') + '</small>');
+                    marker.addTo(intelMap);
+                    intelMarkers.push(marker);
+                }
+            });
+            
+            demos.forEach(function(item) {
+                if (item.latitude && item.longitude) {
+                    var marker = L.marker([item.latitude, item.longitude], {icon: demoIcon})
+                        .bindPopup('<strong>' + escapeHtmlIntel(item.category || 'Demonstration') + '</strong><br>' + escapeHtmlIntel(item.summary || item.location || '') + '<br><small>' + escapeHtmlIntel(item.date || '') + '</small>');
+                    marker.addTo(intelMap);
+                    intelMarkers.push(marker);
+                }
+            });
+            
+            if (intelMarkers.length > 0) {
+                var group = L.featureGroup(intelMarkers);
+                intelMap.fitBounds(group.getBounds().pad(0.2));
+            }
+        }
+        
+        function toggleIntelMap() {
+            var toggle = document.getElementById('intelMapToggle');
+            var wrapper = document.getElementById('intelMapWrapper');
+            
+            if (wrapper.classList.contains('open')) {
+                wrapper.classList.remove('open');
+                toggle.classList.remove('open');
+            } else {
+                wrapper.classList.add('open');
+                toggle.classList.add('open');
+                if (intelMap) {
+                    setTimeout(function() {
+                        intelMap.invalidateSize();
+                    }, 350);
+                }
+            }
+        }
+        
+        function escapeHtmlIntel(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+    </script>
+</body>
+</html>

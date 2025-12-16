@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Security Brief - Touring Security Consultant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e8e8e8;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 2rem;
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            color: #888;
+            font-size: 0.95rem;
+        }
+        
+        .form-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        label {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        input, select {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 12px 15px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+        }
+        
+        input::placeholder {
+            color: #666;
+        }
+        
+        select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            color: #000;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,212,255,0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+            box-shadow: none;
+        }
+        
+        .results-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: none;
+        }
+        
+        .results-card.visible {
+            display: block;
+        }
+        
+        .brief-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .brief-title {
+            font-size: 1.2rem;
+            color: #00d4ff;
+        }
+        
+        .brief-meta {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        
+        .risk-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .risk-low {
+            background: rgba(40,167,69,0.2);
+            color: #28a745;
+            border: 1px solid rgba(40,167,69,0.3);
+        }
+        
+        .risk-moderate {
+            background: rgba(255,193,7,0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255,193,7,0.3);
+        }
+        
+        .risk-high {
+            background: rgba(220,53,69,0.2);
+            color: #dc3545;
+            border: 1px solid rgba(220,53,69,0.3);
+        }
+        
+        .confidence-indicator {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .brief-content {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        .brief-section {
+            margin-bottom: 20px;
+        }
+        
+        .brief-section h3 {
+            color: #00d4ff;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .brief-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .brief-section li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .brief-section li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #00d4ff;
+        }
+        
+        .sources-toggle {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #888;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .sources-toggle:hover {
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+        
+        .sources-panel {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .sources-panel.visible {
+            display: block;
+        }
+        
+        .source-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+        }
+        
+        .source-item a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+        
+        .source-item a:hover {
+            text-decoration: underline;
+        }
+        
+        .disclaimer {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,193,7,0.1);
+            border: 1px solid rgba(255,193,7,0.3);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #ffc107;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #888;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        
+        .brief-text-container {
+            position: relative;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+        
+        .error-message {
+            background: rgba(220,53,69,0.1);
+            border: 1px solid rgba(220,53,69,0.3);
+            color: #dc3545;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            text-decoration: none;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Report Listing
+        </a>
+        
+        <header>
+            <h1><i class="fas fa-shield-alt"></i> City Security Brief</h1>
+            <p>Real-time security intelligence for touring operations (80 people, artists/crew)</p>
+        </header>
+        
+        <div class="form-card">
+            <form id="briefForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City *</label>
+                        <input type="text" id="city" name="city" placeholder="e.g., Manchester, Reims, Utrecht" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="country">Country *</label>
+                        <select id="country" name="country" required>
+                            <option value="">Select country...</option>
+                            <option value="United Kingdom">United Kingdom</option>
+                            <option value="France">France</option>
+                            <option value="Germany">Germany</option>
+                            <option value="Netherlands">Netherlands</option>
+                            <option value="Belgium">Belgium</option>
+                            <option value="Spain">Spain</option>
+                            <option value="Italy">Italy</option>
+                            <option value="Switzerland">Switzerland</option>
+                            <option value="Austria">Austria</option>
+                            <option value="Poland">Poland</option>
+                            <option value="Czech Republic">Czech Republic</option>
+                            <option value="Denmark">Denmark</option>
+                            <option value="Sweden">Sweden</option>
+                            <option value="Norway">Norway</option>
+                            <option value="Finland">Finland</option>
+                            <option value="Ireland">Ireland</option>
+                            <option value="Portugal">Portugal</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="address">Hotel Area / Venue Address (optional - for proximity scoring)</label>
+                        <input type="text" id="address" name="address" placeholder="e.g., Manchester Arena, M3 1AR">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <button type="submit" class="btn" id="submitBtn">
+                            <i class="fas fa-search"></i> Generate Brief
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="results-card" id="resultsCard">
+            <div class="loading" id="loadingIndicator" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Gathering security intelligence...</p>
+            </div>
+            
+            <div id="errorContainer"></div>
+            
+            <div id="briefResults" style="display: none;">
+                <div class="brief-header">
+                    <div>
+                        <div class="brief-title" id="briefTitle"></div>
+                        <div class="brief-meta" id="briefMeta"></div>
+                    </div>
+                    <div>
+                        <div class="risk-badge" id="riskBadge"></div>
+                        <div class="confidence-indicator" id="confidenceIndicator"></div>
+                    </div>
+                </div>
+                
+                <div class="brief-text-container">
+                    <button class="copy-btn" onclick="copyBrief()">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <pre class="brief-content" id="briefText"></pre>
+                </div>
+                
+                <button class="sources-toggle" onclick="toggleSources()">
+                    <i class="fas fa-link"></i> View Sources
+                </button>
+                
+                <div class="sources-panel" id="sourcesPanel">
+                    <div id="sourcesList"></div>
+                </div>
+                
+                <div class="disclaimer">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    This brief is informational and may be incomplete. Always verify with local authorities / venue security.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('briefForm');
+        const resultsCard = document.getElementById('resultsCard');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const briefResults = document.getElementById('briefResults');
+        const errorContainer = document.getElementById('errorContainer');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        let currentBriefText = '';
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const city = document.getElementById('city').value.trim();
+            const country = document.getElementById('country').value;
+            const address = document.getElementById('address').value.trim();
+            
+            if (!city || !country) {
+                alert('Please enter both city and country');
+                return;
+            }
+            
+            resultsCard.classList.add('visible');
+            loadingIndicator.style.display = 'block';
+            briefResults.style.display = 'none';
+            errorContainer.innerHTML = '';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/security-brief', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ city, country, address })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayBrief(data.brief, data.text_brief);
+                } else {
+                    showError(data.error || 'Failed to generate brief');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+                console.error(error);
+            } finally {
+                loadingIndicator.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+        
+        function displayBrief(brief, textBrief) {
+            document.getElementById('briefTitle').textContent = 
+                `Security Brief: ${brief.city}, ${brief.country}`;
+            document.getElementById('briefMeta').textContent = 
+                `Generated: ${brief.generated_at}`;
+            
+            const riskBadge = document.getElementById('riskBadge');
+            riskBadge.textContent = `Risk: ${brief.risk_level}`;
+            riskBadge.className = 'risk-badge risk-' + brief.risk_level.toLowerCase();
+            
+            document.getElementById('confidenceIndicator').textContent = 
+                `Confidence: ${brief.confidence}`;
+            
+            currentBriefText = textBrief;
+            document.getElementById('briefText').textContent = textBrief;
+            
+            const sourcesList = document.getElementById('sourcesList');
+            sourcesList.innerHTML = '';
+            
+            if (brief.source_details && brief.source_details.length > 0) {
+                brief.source_details.forEach(source => {
+                    const div = document.createElement('div');
+                    div.className = 'source-item';
+                    div.innerHTML = `
+                        <span>${source.source}</span>
+                        ${source.url ? `<a href="${source.url}" target="_blank">View</a>` : '<span>-</span>'}
+                    `;
+                    sourcesList.appendChild(div);
+                });
+            } else {
+                sourcesList.innerHTML = '<p style="color: #888;">No external source links available</p>';
+            }
+            
+            briefResults.style.display = 'block';
+        }
+        
+        function showError(message) {
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> ${message}
+                </div>
+            `;
+        }
+        
+        function toggleSources() {
+            const panel = document.getElementById('sourcesPanel');
+            panel.classList.toggle('visible');
+        }
+        
+        function copyBrief() {
+            navigator.clipboard.writeText(currentBriefText).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

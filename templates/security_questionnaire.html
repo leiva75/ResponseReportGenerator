@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a365d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Security Meeting Questionnaire - {{ venue_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/response_logo.png') }}">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/js/sw.js').catch(function(e) {
+                console.log('SW registration failed:', e);
+            });
+        }
+    </script>
+    <style>
+        .questionnaire-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .questionnaire-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .questionnaire-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.8rem;
+        }
+        .questionnaire-header .venue-info {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        .q-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #6c5ce7;
+        }
+        .q-section h3 {
+            margin: 0 0 15px 0;
+            color: #2d3436;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .q-section h3 .icon {
+            width: 28px;
+            height: 28px;
+            background: #6c5ce7;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        .q-section.threat { border-left-color: #e74c3c; }
+        .q-section.threat h3 .icon { background: #e74c3c; }
+        .q-section.fire { border-left-color: #f39c12; }
+        .q-section.fire h3 .icon { background: #f39c12; }
+        .q-section.screening { border-left-color: #3498db; }
+        .q-section.screening h3 .icon { background: #3498db; }
+        .q-section.child { border-left-color: #e91e63; }
+        .q-section.child h3 .icon { background: #e91e63; }
+        .q-section.backstage { border-left-color: #9b59b6; }
+        .q-section.backstage h3 .icon { background: #9b59b6; }
+        .q-section.staff { border-left-color: #00b894; }
+        .q-section.staff h3 .icon { background: #00b894; }
+        .q-section.general { border-left-color: #0984e3; }
+        .q-section.general h3 .icon { background: #0984e3; }
+        .q-section.crowd { border-left-color: #fd79a8; }
+        .q-section.crowd h3 .icon { background: #fd79a8; }
+        .q-section.medical { border-left-color: #ff6b6b; }
+        .q-section.medical h3 .icon { background: #ff6b6b; }
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .form-row > .form-group {
+            flex: 1;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #2d3436;
+        }
+        .form-group label.required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dfe6e9;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #6c5ce7;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .checkbox-item:hover {
+            background: #e9ecef;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .radio-item input[type="radio"] {
+            width: 18px;
+            height: 18px;
+        }
+        .yes-no-grid {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 10px;
+            align-items: center;
+        }
+        .yes-no-row {
+            display: contents;
+        }
+        .yes-no-row .question {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .yes-no-row .radio-cell {
+            display: flex;
+            gap: 15px;
+        }
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .number-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .number-item input[type="number"] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #dfe6e9;
+            border-radius: 6px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #6c5ce7;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5b4cdb;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: #00b894;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #00a383;
+        }
+        .btn-secondary {
+            background: #636e72;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #535c60;
+        }
+        .btn-export {
+            background: #2d3436;
+            color: white;
+        }
+        .btn-export:hover {
+            background: #1e2324;
+        }
+        .feedback-message {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .feedback-message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .feedback-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #636e72;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .back-link:hover {
+            color: #2d3436;
+        }
+        @media (max-width: 600px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .checkbox-group {
+                flex-direction: column;
+            }
+            .number-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="questionnaire-container">
+        <a href="/" class="back-link">← Back to Report Form</a>
+        
+        <div class="questionnaire-header">
+            <h1>Security Meeting Questionnaire</h1>
+            <div class="venue-info">
+                <strong>{{ venue_name }}</strong><br>
+                {{ city }}{% if country %}, {{ country }}{% endif %}
+            </div>
+        </div>
+        
+        {% if message %}
+        <div class="feedback-message {{ message_type }}">{{ message }}</div>
+        {% endif %}
+        
+        <form method="POST" id="questionnaireForm">
+            <div class="q-section threat">
+                <h3><span class="icon">!</span> External Threat</h3>
+                <div class="form-group">
+                    <label for="external_threat_description">Threat Description / Assessment</label>
+                    <textarea id="external_threat_description" name="external_threat_description" 
+                              placeholder="Describe any external threats identified...">{{ data.external_threat_description }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="external_threat_meeting_point" class="required">Meeting Point (External Evacuation)</label>
+                    <input type="text" id="external_threat_meeting_point" name="external_threat_meeting_point" 
+                           value="{{ data.external_threat_meeting_point }}" placeholder="e.g., North car park, 100m from main entrance" required>
+                </div>
+            </div>
+            
+            <div class="q-section fire">
+                <h3><span class="icon">🔥</span> Fire Inside Venue</h3>
+                <div class="form-group">
+                    <label for="fire_gathering_points" class="required">Gathering Points (Fire Evacuation)</label>
+                    <textarea id="fire_gathering_points" name="fire_gathering_points" 
+                              placeholder="List all fire evacuation gathering points..." required>{{ data.fire_gathering_points }}</textarea>
+                </div>
+            </div>
+            
+            <div class="q-section screening">
+                <h3><span class="icon">🔍</span> Screening Procedures</h3>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="screening_walk_through" value="1" 
+                               {% if data.screening_walk_through %}checked{% endif %}>
+                        Walk-through Magnetometers
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="screening_handheld" value="1"
+                               {% if data.screening_handheld %}checked{% endif %}>
+                        Handheld Metal Detectors
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="screening_pat_down" value="1"
+                               {% if data.screening_pat_down %}checked{% endif %}>
+                        Pat-down Searches
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="screening_bag_checks" value="1"
+                               {% if data.screening_bag_checks %}checked{% endif %}>
+                        Bag Checks
+                    </label>
+                </div>
+            </div>
+            
+            <div class="q-section child">
+                <h3><span class="icon">👶</span> Missing Child Protocol</h3>
+                <div class="form-group">
+                    <label>Missing Child Protocol in Place?</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="missing_child_protocol" value="Yes"
+                                   {% if data.missing_child_protocol == 'Yes' %}checked{% endif %}>
+                            Yes
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="missing_child_protocol" value="No"
+                                   {% if data.missing_child_protocol == 'No' %}checked{% endif %}>
+                            No
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="missing_child_notes">Protocol Details / Notes</label>
+                    <textarea id="missing_child_notes" name="missing_child_notes"
+                              placeholder="Describe the missing child protocol...">{{ data.missing_child_notes }}</textarea>
+                </div>
+            </div>
+            
+            <div class="q-section backstage">
+                <h3><span class="icon">🎭</span> Backstage Rules</h3>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="backstage_id_required" value="1"
+                               {% if data.backstage_id_required %}checked{% endif %}>
+                        ID/Pass Required
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="backstage_escort_required" value="1"
+                               {% if data.backstage_escort_required %}checked{% endif %}>
+                        Escort Required for Visitors
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="backstage_sign_in_required" value="1"
+                               {% if data.backstage_sign_in_required %}checked{% endif %}>
+                        Sign-in/Sign-out Required
+                    </label>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="backstage_notes">Additional Backstage Notes</label>
+                    <textarea id="backstage_notes" name="backstage_notes"
+                              placeholder="Additional backstage security notes...">{{ data.backstage_notes }}</textarea>
+                </div>
+            </div>
+            
+            <div class="q-section staff">
+                <h3><span class="icon">👥</span> Security Staff & Resources</h3>
+                <div class="form-group">
+                    <label for="security_company_name" class="required">Security Company Name</label>
+                    <input type="text" id="security_company_name" name="security_company_name"
+                           value="{{ data.security_company_name }}" placeholder="e.g., G4S, Securitas..." required>
+                </div>
+                <div class="number-grid">
+                    <div class="number-item">
+                        <label for="security_supervisors">Supervisors</label>
+                        <input type="number" id="security_supervisors" name="security_supervisors" 
+                               value="{{ data.security_supervisors or 0 }}" min="0">
+                    </div>
+                    <div class="number-item">
+                        <label for="security_guards">Security Guards</label>
+                        <input type="number" id="security_guards" name="security_guards" 
+                               value="{{ data.security_guards or 0 }}" min="0">
+                    </div>
+                    <div class="number-item">
+                        <label for="security_traffic_management">Traffic Management</label>
+                        <input type="number" id="security_traffic_management" name="security_traffic_management" 
+                               value="{{ data.security_traffic_management or 0 }}" min="0">
+                    </div>
+                    <div class="number-item">
+                        <label for="security_ticket_checkers" class="required">Ticket Checkers</label>
+                        <input type="number" id="security_ticket_checkers" name="security_ticket_checkers" 
+                               value="{{ data.security_ticket_checkers or 0 }}" min="0" required>
+                    </div>
+                    <div class="number-item">
+                        <label for="security_ushers" class="required">Ushers</label>
+                        <input type="number" id="security_ushers" name="security_ushers" 
+                               value="{{ data.security_ushers or 0 }}" min="0" required>
+                    </div>
+                    <div class="number-item">
+                        <label for="security_medics" class="required">Medics / Ambulance</label>
+                        <input type="number" id="security_medics" name="security_medics" 
+                               value="{{ data.security_medics or 0 }}" min="0" required>
+                    </div>
+                    <div class="number-item">
+                        <label for="security_other">Other Staff</label>
+                        <input type="number" id="security_other" name="security_other" 
+                               value="{{ data.security_other or 0 }}" min="0">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="security_other_description">Other Staff Description</label>
+                    <input type="text" id="security_other_description" name="security_other_description"
+                           value="{{ data.security_other_description }}" placeholder="Describe other staff roles...">
+                </div>
+            </div>
+            
+            <div class="q-section general">
+                <h3><span class="icon">✓</span> General Security Measures</h3>
+                <div class="yes-no-grid">
+                    {% set general_items = [
+                        ('general_cctv_operational', 'CCTV System Operational'),
+                        ('general_lighting_adequate', 'Adequate Lighting (interior & exterior)'),
+                        ('general_emergency_exits_clear', 'Emergency Exits Clear & Marked'),
+                        ('general_fire_extinguishers', 'Fire Extinguishers Available & Serviced'),
+                        ('general_first_aid_kits', 'First Aid Kits Available'),
+                        ('general_communication_radios', 'Communication Radios Available')
+                    ] %}
+                    {% for field_name, question in general_items %}
+                    <div class="yes-no-row">
+                        <div class="question">{{ question }}</div>
+                        <div class="radio-cell">
+                            <label class="radio-item">
+                                <input type="radio" name="{{ field_name }}" value="Yes"
+                                       {% if data[field_name] == 'Yes' %}checked{% endif %}>
+                                Yes
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="{{ field_name }}" value="No"
+                                       {% if data[field_name] == 'No' %}checked{% endif %}>
+                                No
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="q-section crowd">
+                <h3><span class="icon">🎪</span> Crowd & Operations</h3>
+                <div class="yes-no-grid">
+                    {% set crowd_items = [
+                        ('crowd_capacity_limits', 'Capacity Limits Defined & Monitored'),
+                        ('crowd_barrier_placement', 'Crowd Barriers in Place'),
+                        ('crowd_queuing_system', 'Queuing System Established'),
+                        ('crowd_vip_separate_access', 'Separate VIP Access'),
+                        ('crowd_disabled_access', 'Disabled Access Provisions')
+                    ] %}
+                    {% for field_name, question in crowd_items %}
+                    <div class="yes-no-row">
+                        <div class="question">{{ question }}</div>
+                        <div class="radio-cell">
+                            <label class="radio-item">
+                                <input type="radio" name="{{ field_name }}" value="Yes"
+                                       {% if data[field_name] == 'Yes' %}checked{% endif %}>
+                                Yes
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="{{ field_name }}" value="No"
+                                       {% if data[field_name] == 'No' %}checked{% endif %}>
+                                No
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="q-section medical">
+                <h3><span class="icon">🏥</span> Medical Response</h3>
+                <div class="form-group">
+                    <label>Ambulance On-Site?</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="medical_ambulance_onsite" value="Yes"
+                                   {% if data.medical_ambulance_onsite == 'Yes' %}checked{% endif %}>
+                            Yes
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="medical_ambulance_onsite" value="No"
+                                   {% if data.medical_ambulance_onsite == 'No' %}checked{% endif %}>
+                            No
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="medical_paramedics_count">Number of Paramedics</label>
+                        <input type="number" id="medical_paramedics_count" name="medical_paramedics_count"
+                               value="{{ data.medical_paramedics_count or 0 }}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="medical_first_aiders_count">Number of First Aiders</label>
+                        <input type="number" id="medical_first_aiders_count" name="medical_first_aiders_count"
+                               value="{{ data.medical_first_aiders_count or 0 }}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="medical_hospital_distance">Nearest Hospital Distance</label>
+                        <input type="text" id="medical_hospital_distance" name="medical_hospital_distance"
+                               value="{{ data.medical_hospital_distance }}" placeholder="e.g., 5 km / 10 min">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="medical_policy_notes">Medical Policy Notes</label>
+                    <textarea id="medical_policy_notes" name="medical_policy_notes"
+                              placeholder="Medical response policy and procedures...">{{ data.medical_policy_notes }}</textarea>
+                </div>
+            </div>
+            
+            <div class="q-section">
+                <h3><span class="icon">📝</span> Additional Notes</h3>
+                <div class="form-group">
+                    <label for="additional_notes">Any Additional Information</label>
+                    <textarea id="additional_notes" name="additional_notes" rows="4"
+                              placeholder="Any other relevant security information...">{{ data.additional_notes }}</textarea>
+                </div>
+            </div>
+            
+            <div class="btn-row">
+                <a href="/" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-success">Save Questionnaire</button>
+                {% if is_edit %}
+                <a href="{{ url_for('export_security_questionnaire', venue_id=venue_id) }}" class="btn btn-export">Export to Word</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        document.querySelectorAll('input[type="number"]').forEach(function(input) {
+            input.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+            });
+        });
+    </script>
+</body>
+</html>
