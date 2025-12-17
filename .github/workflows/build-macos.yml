@@ -1,74 +1,60 @@
-name: Build macOS (.app + .dmg)
+name: Build macOS (.app + zip)
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["main"]
 
 jobs:
-  build:
+  build-macos:
     runs-on: macos-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
-          python -m pip install -U pip
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build macOS app
-        run: |
-          # ⚠️ IMPORTANT : remplace la commande ci-dessous par EXACTEMENT celle que tu utilises sur Windows,
-          # en gardant l'entrée (main.py ou ton .spec)
-          pyinstaller -n "response-report-generator" --windowed main.py
-
-           - name: Package ZIP (.app) + DMG
+      - name: Build macOS App
         run: |
           set -e
+          # Si tu as un .spec, on l'utilise. Sinon on tente main.py.
+          if [ -f "ResponseReportGenerator.spec" ]; then
+            pyinstaller --noconfirm --clean ResponseReportGenerator.spec
+          else
+            pyinstaller --noconfirm --clean --windowed --name "ResponseReportGenerator" main.py
+          fi
+
           echo "=== dist content ==="
           ls -la dist || true
+          echo "=== find .app ==="
+          find dist -maxdepth 4 -name "*.app" -print || true
 
-          # 1) Trouver le .app
-          APP_PATH="$(ls -d dist/*.app | head -n 1 || true)"
+      - name: Zip the .app
+        run: |
+          set -e
+          APP_PATH="$(find dist -maxdepth 4 -name '*.app' -print -quit)"
+          echo "APP_PATH=$APP_PATH"
           if [ -z "$APP_PATH" ]; then
             echo "ERROR: No .app found in dist/. PyInstaller did not create an app bundle."
+            echo "dist listing:"
+            ls -la dist || true
             exit 1
           fi
-          echo "APP_PATH=$APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ResponseReportGenerator-macOS.zip
+          ls -la ResponseReportGenerator-macOS.zip
 
-          # 2) ZIP propre du .app (pour téléchargement)
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" dist/response-report-generator-macOS.zip
-
-          # 3) DMG (drag & drop vers Applications)
-          rm -rf dmgroot
-          mkdir -p dmgroot
-          cp -R "$APP_PATH" dmgroot/
-          ln -s /Applications dmgroot/Applications
-
-          hdiutil create -volname "ResponseReportGenerator" \
-            -srcfolder dmgroot \
-            -ov -format UDZO \
-            dist/ResponseReportGenerator-macOS.dmg
-
-          echo "=== packaged files ==="
-          ls -la dist
-
-      - name: Upload artifacts
+      - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-build
-          path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.app
-
-          name: macos-build
-          path: |
-            dist/*.dmg
-            dist/*.app
+          name: ResponseReportGenerator-macOS
+          path: ResponseReportGenerator-macOS.zip
