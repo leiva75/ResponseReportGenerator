@@ -28,14 +28,46 @@ jobs:
           # en gardant l'entrée (main.py ou ton .spec)
           pyinstaller -n "response-report-generator" --windowed main.py
 
-      - name: Package DMG
+           - name: Package ZIP (.app) + DMG
         run: |
-          npm i -g create-dmg
-          create-dmg "dist/response-report-generator.app" "dist" --overwrite --no-code-sign
+          set -e
+          echo "=== dist content ==="
+          ls -la dist || true
+
+          # 1) Trouver le .app
+          APP_PATH="$(ls -d dist/*.app | head -n 1 || true)"
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: No .app found in dist/. PyInstaller did not create an app bundle."
+            exit 1
+          fi
+          echo "APP_PATH=$APP_PATH"
+
+          # 2) ZIP propre du .app (pour téléchargement)
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" dist/response-report-generator-macOS.zip
+
+          # 3) DMG (drag & drop vers Applications)
+          rm -rf dmgroot
+          mkdir -p dmgroot
+          cp -R "$APP_PATH" dmgroot/
+          ln -s /Applications dmgroot/Applications
+
+          hdiutil create -volname "ResponseReportGenerator" \
+            -srcfolder dmgroot \
+            -ov -format UDZO \
+            dist/ResponseReportGenerator-macOS.dmg
+
+          echo "=== packaged files ==="
+          ls -la dist
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
+          name: macos-build
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.app
+
           name: macos-build
           path: |
             dist/*.dmg
