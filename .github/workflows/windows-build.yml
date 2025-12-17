@@ -65,10 +65,19 @@ jobs:
           find dist -maxdepth 3 -name "*.app" -print || true
 
 
-      - name: Zip the .app correctly
+            - name: Zip the .app correctly
         run: |
-          APP_PATH="$(ls -d dist/*.app | head -n 1)"
+          set -e
+          APP_PATH="$(find dist -maxdepth 3 -name '*.app' -print -quit)"
+          echo "APP_PATH=$APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: No .app found. PyInstaller did not create an app bundle."
+            echo "dist listing:"
+            ls -la dist || true
+            exit 1
+          fi
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ResponseReportGenerator-macOS.zip
+
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
