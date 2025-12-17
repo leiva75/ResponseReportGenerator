@@ -31,3 +31,4 @@ beautifulsoup4
 feedparser
 python-dateutil
 platformdirs>=4.0.0
+python-docx
