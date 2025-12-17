@@ -2,34 +2,32 @@
 """
 Response Report Generator - Entry Point
 
-Starts the Flask web application and opens Safari (macOS) on the correct port.
+Starts the Flask web app and opens Safari (macOS) or the default browser.
 """
 
 import os
 import sys
-import webbrowser
-import threading
 import time
 import socket
+import threading
+import webbrowser
 import subprocess
 
 
-def get_runtime_root():
+def get_runtime_root() -> str:
     """
-    Runtime root directory.
-    - Frozen (PyInstaller): directory containing the executable
-    - Dev: project root directory (this file's directory)
+    For PyInstaller: directory containing the executable
+    For dev: directory containing this file
     """
     if getattr(sys, "frozen", False):
         return os.path.dirname(sys.executable)
     return os.path.dirname(os.path.abspath(__file__))
 
 
-def get_bundle_dir():
+def get_bundle_dir() -> str:
     """
-    Bundle directory for frozen builds.
-    - Frozen: sys._MEIPASS (temp extraction directory)
-    - Dev: project root directory
+    For PyInstaller: sys._MEIPASS (temp extraction dir)
+    For dev: directory containing this file
     """
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         return sys._MEIPASS
@@ -37,18 +35,12 @@ def get_bundle_dir():
 
 
 def ensure_directories():
-    """Ensure required directories exist."""
     from services.paths import ensure_dirs_exist
     ensure_dirs_exist()
     print("Runtime directories initialized")
 
 
 def load_environment():
-    """
-    Load environment variables from .env file.
-    - Frozen: next to executable
-    - Dev: project root
-    """
     from dotenv import load_dotenv
 
     runtime_root = get_runtime_root()
@@ -70,35 +62,30 @@ def _is_port_free(host: str, port: int) -> bool:
 def _wait_port(host: str, port: int, timeout: float = 20.0) -> bool:
     end = time.time() + timeout
     while time.time() < end:
-        if not _is_port_free(host, port):
+        if not _is_port_free(host, port):  # port is now LISTENING
             return True
         time.sleep(0.2)
     return False
 
 
 def choose_port(host: str, preferred: int) -> int:
-    """
-    Pick a usable port.
-    1) try preferred
-    2) try a small safe list
-    3) ask OS for an ephemeral port
-    """
+    # 1) preferred
     if _is_port_free(host, preferred):
         return preferred
 
+    # 2) common alternates
     for p in (5050, 5001, 8000, 8080, 8888):
         if _is_port_free(host, p):
             return p
 
+    # 3) ask OS for a free port
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, 0))
         return s.getsockname()[1]
 
 
 def _open_safari(url: str):
-    """
-    Force Safari on macOS. Else fallback to default browser.
-    """
+    """Force Safari on macOS; fallback to default browser otherwise."""
     try:
         if sys.platform == "darwin":
             subprocess.run(["open", "-a", "Safari", url], check=False)
@@ -118,8 +105,9 @@ def open_browser(host: str, port: int):
 
 
 def main():
-    # If frozen, work from extracted bundle so relative paths behave
+    runtime_root = get_runtime_root()
     bundle_dir = get_bundle_dir()
+
     if getattr(sys, "frozen", False):
         os.chdir(bundle_dir)
 
@@ -127,26 +115,29 @@ def main():
     ensure_directories()
 
     host = os.environ.get("HOST", "127.0.0.1")
-
-    # macOS: 5000 is often occupied (AirTunes/AirPlay). Prefer 5050 by default.
-    default_port = 5050 if sys.platform == "darwin" else 5000
-    preferred = int(os.environ.get("PORT", default_port))
+    preferred = int(os.environ.get("PORT", "5050"))
     port = choose_port(host, preferred)
 
-    # Open browser AFTER server is really listening
-    threading.Thread(target=open_browser, args=(host, port), daemon=True).start()
+    # keep everything coherent
+    os.environ["HOST"] = host
+    os.environ["PORT"] = str(port)
+
+    # Import app AFTER env/dirs are set (and before starting browser thread)
+    from app import app
+
+    # Start browser opener thread (IMPORTANT: args=(host, port))
+    browser_thread = threading.Thread(target=open_browser, args=(host, port), daemon=True)
+    browser_thread.start()
 
     print("=" * 60)
     print("  Response Report Generator")
     print("=" * 60)
-    print(f"\n  Starting server at http://{host}:{port}")
+    print(f"\n  Starting server at http://{host}:{port}/")
     print("  Press Ctrl+C to stop the server\n")
     print("=" * 60)
 
-    from app import app
     app.run(host=host, port=port, debug=False, use_reloader=False)
 
 
 if __name__ == "__main__":
     main()
-
