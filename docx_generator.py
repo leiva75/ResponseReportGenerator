@@ -39,6 +39,10 @@ def create_report(*args, **kwargs):
     # Compat: l'app attend create_report()
     # On redirige vers la fonction réelle
     return generate_docx(*args, **kwargs)
+    
+def create_security_questionnaire_docx(*args, **kwargs):
+    # Même mécanique que create_report, mais tu peux changer le titre si tu veux
+    return generate_docx(*args, **kwargs)
 
 
 # Alias “au cas où” ton app importait un autre nom
