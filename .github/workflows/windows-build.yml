@@ -50,10 +50,20 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build macOS App
+            - name: Build macOS App
         run: |
-          pyinstaller ResponseReportGenerator.spec
-          ls -la dist
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+          # ⚠️ Remplace main.py par TON fichier d'entrée si différent
+          pyinstaller --noconfirm --clean --windowed --name "ResponseReportGenerator" main.py
+
+          echo "=== dist content ==="
+          ls -la dist || true
+          echo "=== find .app ==="
+          find dist -maxdepth 3 -name "*.app" -print || true
+
 
       - name: Zip the .app correctly
         run: |
