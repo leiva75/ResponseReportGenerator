@@ -31,8 +31,13 @@ jobs:
           if [ -f "ResponseReportGenerator.spec" ]; then
             pyinstaller --noconfirm --clean ResponseReportGenerator.spec
           else
-            pyinstaller --noconfirm --clean --windowed --name "ResponseReportGenerator" main.py
-          fi
+                  - name: Build macOS App
+        run: |
+          pyinstaller --noconfirm --clean ResponseReportGenerator-mac.spec
+          echo "=== dist content ==="
+          ls -la dist || true
+          find dist -maxdepth 6 -name "*.app" -print || true
+
 
           echo "=== dist content ==="
           ls -la dist || true
