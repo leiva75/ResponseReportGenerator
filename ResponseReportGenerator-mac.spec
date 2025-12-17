@@ -114,12 +114,11 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='static/img/app_icon.ico' if os.path.exists('static/img/app_icon.ico') else None,
+    icon=None,  # sur mac, idéalement .icns (on verra après)
 )
-app = BUNDLE(exe, name='ResponseReportGenerator.app', icon=None, bundle_identifier='com.leiva75.responsereportgenerator')
 
 coll = COLLECT(
-    app,
+    exe,               # ✅ IMPORTANT : exe en premier
     a.binaries,
     a.zipfiles,
     a.datas,
@@ -127,4 +126,11 @@ coll = COLLECT(
     upx=True,
     upx_exclude=[],
     name='ResponseReportGenerator',
+)
+
+app = BUNDLE(          # ✅ BUNDLE après COLLECT
+    coll,
+    name='ResponseReportGenerator.app',
+    icon=None,
+    bundle_identifier='com.leiva75.responsereportgenerator',
 )
