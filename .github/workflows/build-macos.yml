@@ -1,4 +1,4 @@
-name: Build macOS (.app + zip)
+name: Build macOS (.app)
 
 on:
   workflow_dispatch:
@@ -27,38 +27,32 @@ jobs:
       - name: Build macOS App
         run: |
           set -e
-          # Si tu as un .spec, on l'utilise. Sinon on tente main.py.
-          if [ -f "ResponseReportGenerator.spec" ]; then
-            pyinstaller --noconfirm --clean ResponseReportGenerator.spec
+          # Utilise le spec mac si tu l'as, sinon le spec standard
+          if [ -f "ResponseReportGenerator-mac.spec" ]; then
+            pyinstaller --noconfirm --clean ResponseReportGenerator-mac.spec
           else
-                  - name: Build macOS App
-        run: |
-          pyinstaller --noconfirm --clean ResponseReportGenerator-mac.spec
-          echo "=== dist content ==="
-          ls -la dist || true
-          find dist -maxdepth 6 -name "*.app" -print || true
-
+            pyinstaller --noconfirm --clean ResponseReportGenerator.spec
+          fi
 
           echo "=== dist content ==="
           ls -la dist || true
           echo "=== find .app ==="
-          find dist -maxdepth 4 -name "*.app" -print || true
+          find dist -maxdepth 6 -name "*.app" -print || true
 
       - name: Zip the .app
         run: |
           set -e
-          APP_PATH="$(find dist -maxdepth 4 -name '*.app' -print -quit)"
+          APP_PATH="$(find dist -maxdepth 6 -name '*.app' -print -quit)"
           echo "APP_PATH=$APP_PATH"
           if [ -z "$APP_PATH" ]; then
             echo "ERROR: No .app found in dist/. PyInstaller did not create an app bundle."
-            echo "dist listing:"
             ls -la dist || true
             exit 1
           fi
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ResponseReportGenerator-macOS.zip
           ls -la ResponseReportGenerator-macOS.zip
 
-      - name: Upload macOS artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ResponseReportGenerator-macOS
