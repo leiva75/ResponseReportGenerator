@@ -1,0 +1,42 @@
+name: Build macOS (.app + .dmg)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build macOS app
+        run: |
+          # ⚠️ IMPORTANT : remplace la commande ci-dessous par EXACTEMENT celle que tu utilises sur Windows,
+          # en gardant l'entrée (main.py ou ton .spec)
+          pyinstaller -n "response-report-generator" --windowed main.py
+
+      - name: Package DMG
+        run: |
+          npm i -g create-dmg
+          create-dmg "dist/response-report-generator.app" "dist" --overwrite --no-code-sign
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            dist/*.dmg
+            dist/*.app
